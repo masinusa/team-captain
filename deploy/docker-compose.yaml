@@ -1,0 +1,39 @@
+x-shared_options: &shared_options
+  networks:
+    - team_captain_network
+
+services:
+  local_backend_tc:
+    image: backend_tc:latest
+    container_name: ${USER}_backend_tc
+    build:
+      context: ../services/backend
+      dockerfile: ./docker/Dockerfile
+      args:
+        - USER=${USER}
+        - CONTAINER_SRC=/usr/src
+        - APP_PORT=5000
+        - GUNICORN_WORKERS=4
+        - GUNICORN_TIMEOUT=300
+        - GUNICORN_BACKLOG=2048
+        - GUNICORN_MAX_REQUESTS=150
+    ports:
+      - ${BACKEND_PORT}:5000
+    volumes:
+      - ../services/backend:/usr/src
+    <<: *shared_options
+
+
+  # web_streamlit_tc:
+  #   image: streamlit_tc:latest
+  #   container_name: ${USER}_web_streamlit_tc
+  #   build:
+  #     context: ../services/web_frontend_streamlit
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ../services/web_frontend_streamlit:/usr/src
+  #   <<: *shared_options
+
+networks:
+  team_captain_network:
+    name: ${USER}_team_captain_network
