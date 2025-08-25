@@ -3,3 +3,6 @@ uvicorn
 fastapi
 pydantic
 requests
+pandas
+matplotlib
+mplsoccer

@@ -1,65 +1,51 @@
 import random
 from typing import List, Tuple
 
+from pydantic import validate_call
 
-from data_classes.PlayersExcel import PlayersExcel, Player
-from data_classes.Team import Team
-from utils import coin_flip
+from data_models import Player
+from data_models.Team import Team
+from utils import coin_flip, swap_items
+from algorithm_utils import balanced_partition
 
-PLAYER_EXCEL = PlayersExcel()
-
-
-def _balanced_partition(
-    players: List[Player], optimizing_attribute: str
-) -> Tuple[Team, Team]:
-    """_summary_
+@validate_call
+def select_teams(players: List[Player]) -> Tuple[Team, Team]:
+    """Selects two balanced teams from a list of players.
 
     Args:
-        players (List[Player]): _description_
-        optimizing_attribute (str): _description_
+        players (List[Player]): The list of players to select from.
 
     Returns:
-        Tuple[Team, Team]: _description_
+        Tuple[Team, Team]: A tuple containing two balanced teams.
 
     Raises:
-        ValueError: If the optimizing_attribute is not valid
+        ValueError: If the list of players is empty or contains less than two players.
     """
 
-    sorted_players = sorted(
-        players,
-        key=lambda player: getattr(player, optimizing_attribute),
-        reverse=True,
-    )  # highest to lowest
+    if not players or len(players) < 4:
+        raise ValueError("At least four players are required to form teams.")
 
-    sum1 = 0
-    sum2 = 0
-    team1 = Team()
-    team2 = Team()
-    for player in sorted_players:
-        if sum1 <= sum2:
-            sum1 += getattr(player, optimizing_attribute)
-            team1.add_player(player)
-        else:
-            sum2 += getattr(player, optimizing_attribute)
-            team2.add_player(player)
-
-    return team1, team2
-
-
-def select_teams(players: List[Player]) -> Tuple[Team, Team]:
-    """Greedy Team Balanced Partition problem solver"""
-
-    # #### Retrieve list of all players and shuffle for potential randomness (unsure if shuffling actually helps at this stage) ###
-    # all_players: List[Player] = [
-    #     PLAYER_EXCEL.get_player(player_name) for player_name in player_names
-    # ]
+    #### Retrieve list of all players and shuffle for potential randomness (unsure if shuffling actually helps at this stage) ###
     random.shuffle(players)
 
     ### Optimize balance on a single player attribute ###
-    team1, team2 = _balanced_partition(
+    team1, team2 = balanced_partition(
         players=players, optimizing_attribute="offense_defense_ratio"
     )
 
+    # Get the two lowest distribution players to avoid being on the same team
+    sorted_players_distribution = sorted(
+        players, key=lambda player: getattr(player, "distribution"), reverse=True
+    )  # highest to lowest
+    first_lowest_distribution_player = sorted_players_distribution[
+        -1
+    ]  # Lowest distribution player
+    second_lowest_distribution_player = sorted_players_distribution[
+        -2
+    ]  # Second-lowest distribution player
+
+
+    ### Declare variance function to minimize ###
     variance = lambda t1, t2: (
         abs(t1.average_od_ratio - t2.average_od_ratio)
         + (
@@ -88,16 +74,6 @@ def select_teams(players: List[Player]) -> Tuple[Team, Team]:
     #             min_var = var
     #             min_var_team1, min_var_team2 = test_team1, test_team2
 
-    # Get the two lowest distribution players to avoid being on the same team
-    sorted_players_distribution = sorted(
-        players, key=lambda player: getattr(player, "distribution"), reverse=True
-    )  # highest to lowest
-    first_lowest_distribution_player = sorted_players_distribution[
-        -1
-    ]  # Lowest distribution player
-    second_lowest_distribution_player = sorted_players_distribution[
-        -2
-    ]  # Second-lowest distribution player
 
     # Try every combination of switching two players to minimize variance value
     teams_evaluated = 0

@@ -1,0 +1,57 @@
+
+# this is needed for local development with docker
+[server]
+# if you don't want to start the default browser:
+headless = true
+# you will need this for local development:
+runOnSave = true
+# you will need this if running docker on windows host:
+fileWatcherType = "poll"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base="dark"
+# Primary accent color - using deep forest green for interactive elements and better readability
+primaryColor = "#2D5A27"
+
+# Background color of the app - light grass green for a fresh field look
+backgroundColor = "#F0F7F0"
+
+# Background color used for most interactive widgets - deeper grass green
+secondaryBackgroundColor = "#E1EFE1"
+
+# Color used for almost all text - dark green for good contrast
+textColor = "#1B3409"
+
+# Whether to show a border around input widgets.
+showWidgetBorder = true
+
+# Whether to show a vertical separator between the sidebar and the main
+# content area.
+showSidebarBorder = true
+
+[theme.sidebar]
+# Primary accent color - using vibrant orange for contrast in sidebar
+primaryColor = "#FF6B00"
+
+# Background color of the app - slightly darker grass green for distinction
+backgroundColor = "#D4E6D4"
+
+# Button corner radius - slightly rounded for a modern look
+buttonRadius = "4px"
+
+# The color of the border around elements - subtle grass green
+borderColor = "#C8D8C8"
+
+# The color of the border around dataframes and tables.
+# Using the same as borderColor for consistency
+dataframeBorderColor = "#C8D8C8"
+
+# The background color of the dataframe's header.
+# Using a slightly darker green for better distinction
+# dataframeHeadersBackgroundColor = "#CADECA"
+
+# Whether to show a border around input widgets.
+showWidgetBorder = true

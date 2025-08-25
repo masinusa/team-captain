@@ -3,13 +3,15 @@ import statistics
 
 from pydantic import BaseModel, validate_call
 
-from data_classes.PlayersExcel import Player, PlayersExcel
+from data_models import Player
 
 
-class Team:
+class Team(BaseModel):
+    players: List[Player] = []
 
-    def __init__(self, players: List[Player] = []):
-        self.players: List[Player] = players.copy()
+    def __init__(self, players: List[Player] = [], **kwargs):
+        super().__init__(players=players.copy(), **kwargs)
+
 
     @validate_call
     def add_player(self, player: Player) -> None:

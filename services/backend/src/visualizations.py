@@ -1,12 +1,13 @@
 from typing import List, Literal, Tuple, Dict, Any
 import random
+from io import BytesIO
 
+import matplotlib
 import matplotlib.pyplot as plt
 from mplsoccer import VerticalPitch
-from pydantic import BaseModel
+from pydantic import BaseModel, validate_call
 
-from data_classes.PlayersExcel import Player
-from data_classes.Team import Team
+from data_models import Player, Team
 from utils import swap_items, swap_dict_keys
 
 
@@ -160,7 +161,7 @@ def _apply_additional_assignment_rules(
             positions_index["cdm"].player.position = "cam"
 
 
-def create_visualization(team: Team):
+def create_visualization(team: Team) -> matplotlib.figure.Figure:
     position_mappings: List[_PlayerPositionMapping] = _assign_positions(team)
     _apply_additional_assignment_rules(position_mappings)
 
@@ -192,10 +193,11 @@ def create_visualization(team: Team):
 
     # Show
     plt.gca().invert_yaxis()
-    return fig
 
+    return plt
 
-def visualize_team(team: Team) -> dict:
+@validate_call
+def visualize_team(team: Team):
     """Visualize the formation on the pitch"""
 
     pitch = create_visualization(team)

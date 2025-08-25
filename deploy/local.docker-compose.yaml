@@ -1,0 +1,57 @@
+x-shared_options: &shared_options
+  networks:
+    - team_captain_network
+
+services:
+  local_backend_tc:
+    image: backend_tc:latest
+    container_name: ${USER}_backend_tc
+    build:
+      context: ../services/backend
+      dockerfile: ./docker/Dockerfile
+      args:
+        - USER=${CURRENT_UID}
+        - APP_PORT=5000
+        - GUNICORN_WORKERS=4
+        - GUNICORN_TIMEOUT=300
+        - GUNICORN_BACKLOG=2048
+        - GUNICORN_MAX_REQUESTS=150
+        - CONTAINER_SRC=/usr/src
+    command: >
+      uvicorn backend_main:app
+      --host 0.0.0.0
+      --port 5000
+      --reload
+    ports:
+      - ${BACKEND_PORT}:5000
+    volumes:
+      - ../services/backend/src:/usr/src
+    <<: *shared_options
+
+
+  local_web_streamlit_tc:
+    image: streamlit_tc:latest
+    container_name: ${USER}_web_streamlit_tc
+    build:
+      context: ../services/web_frontend_streamlit
+      dockerfile: ./docker/Dockerfile
+      args:
+        - USER=${CURRENT_UID}
+        - APP_PORT=5001
+        - CONTAINER_SRC=/usr/frontend_streamlit
+    environment:
+      - BACKEND_HOSTNAME=local_backend_tc
+      - BACKEND_PORT=5000
+      - DATA_DIR=/usr/data
+    ports:
+      - ${FRONTEND_PORT}:5001
+    depends_on:
+      - local_backend_tc
+    volumes:
+      - ../services/web_frontend_streamlit/src:/usr/frontend_streamlit
+      - ../services/web_frontend_streamlit/data:/usr/data
+    <<: *shared_options
+
+networks:
+  team_captain_network:
+    name: ${USER}_team_captain_network

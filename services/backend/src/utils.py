@@ -5,7 +5,7 @@ import inspect
 
 from pydantic import validate_call
 
-from data_classes.PlayersExcel import Player
+from data_models import Player
 
 
 def this_file_dir():
@@ -61,7 +61,7 @@ def swap_items(lst: List, index1: int, index2: int):
 
     # Check if indices are within bounds
     if not (0 <= index1 < len(lst)) or not (0 <= index2 < len(lst)):
-        raise IndexError("Index out of range")
+        raise IndexError(f"Index {index1}, {index2} out of range for list of length {len(lst)}")
 
     # Swap the items
     lst[index1], lst[index2] = lst[index2], lst[index1]
