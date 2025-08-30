@@ -3,11 +3,11 @@ x-shared_options: &shared_options
     - team_captain_network
 
 services:
-  local_backend_tc:
+  backend_tc:
     image: backend_tc:latest
     container_name: ${USER}_backend_tc
     build:
-      context: ../services/backend
+      context: ../backend
       dockerfile: ./docker/Dockerfile
       args:
         - USER=${CURRENT_UID}
@@ -29,11 +29,11 @@ services:
     <<: *shared_options
 
 
-  local_web_streamlit_tc:
+  frontend_tc:
     image: streamlit_tc:latest
-    container_name: ${USER}_web_streamlit_tc
+    container_name: ${USER}_frontend_tc
     build:
-      context: ../services/web_frontend_streamlit
+      context: ../web_frontend_streamlit
       dockerfile: ./docker/Dockerfile
       args:
         - USER=${CURRENT_UID}
