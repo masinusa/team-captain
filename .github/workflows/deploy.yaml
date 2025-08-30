@@ -3,8 +3,8 @@ name: Deploy to AWS Lambda
 on:
   push:
     branches:
-      - dev  # or your default branch
-  workflow_dispatch:  # allows manual triggers
+      - dev
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
@@ -13,29 +13,22 @@ env:
   # LAMBDA_FUNCTION_NAME: team-captain-function
 
 jobs:
-
-  # Permission can be added at job level or workflow level    
   deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
-    AssumeRoleAndCallIdentity:
-    runs-on: ubuntu-latest
+    
     steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v3
-
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
-        with:
-          role-to-assume: arn:aws:iam::845488705767:role/masinusa-github-workflow #change to reflect your IAM role’s ARN
-          role-session-name: GitHub_to_AWS_via_FederatedOIDC
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: arn:aws:iam::845488705767:role/masinusa-github-workflow
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
