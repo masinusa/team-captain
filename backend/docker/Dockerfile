@@ -21,7 +21,7 @@ WORKDIR $CONTAINER_SRC
 # Create User Home Directory (in case it is needed)
 RUN mkdir -p /home/user && chown -R $USER /home/user
 
-# Build Context is services/backend
+# Build Context 
 COPY ./src .
 COPY ./docker/requirements.txt ./requirements.txt
 
