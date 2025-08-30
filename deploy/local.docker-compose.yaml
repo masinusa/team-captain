@@ -25,7 +25,7 @@ services:
     ports:
       - ${BACKEND_PORT}:5000
     volumes:
-      - ../services/backend/src:/usr/src
+      - ../backend/src:/usr/src
     <<: *shared_options
 
 
@@ -33,23 +33,23 @@ services:
     image: streamlit_tc:latest
     container_name: ${USER}_frontend_tc
     build:
-      context: ../web_frontend_streamlit
+      context: ../frontend
       dockerfile: ./docker/Dockerfile
       args:
         - USER=${CURRENT_UID}
         - APP_PORT=5001
         - CONTAINER_SRC=/usr/frontend_streamlit
     environment:
-      - BACKEND_HOSTNAME=local_backend_tc
+      - BACKEND_HOSTNAME=backend_tc
       - BACKEND_PORT=5000
       - DATA_DIR=/usr/data
     ports:
       - ${FRONTEND_PORT}:5001
     depends_on:
-      - local_backend_tc
+      - backend_tc
     volumes:
-      - ../services/web_frontend_streamlit/src:/usr/frontend_streamlit
-      - ../services/web_frontend_streamlit/data:/usr/data
+      - ../frontend/src:/usr/frontend_streamlit
+      - ../frontend/data:/usr/data
     <<: *shared_options
 
 networks:
