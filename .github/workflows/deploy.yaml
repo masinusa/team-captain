@@ -6,12 +6,6 @@ on:
       - dev
   workflow_dispatch:
 
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: masinusa/team-captain-backend
-  ECR_REGISTRY: 845488705767.dkr.ecr.us-east-1.amazonaws.com
-  # LAMBDA_FUNCTION_NAME: team-captain-function
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -28,7 +22,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::845488705767:role/masinusa-github-workflow
           role-session-name: GitHub_to_AWS_via_FederatedOIDC
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -40,9 +34,9 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         working-directory: ./backend/
         run: |
-          docker build -f ./docker/Dockerfile -t ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
-          docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-          echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          docker build -f ./docker/Dockerfile -t ${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker push ${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:$IMAGE_TAG
+          echo "image=${{ vars.ECR_REGISTRY }}/${{ vars.ECR_REPOSITORY }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       # - name: Update Lambda function
       #   run: |

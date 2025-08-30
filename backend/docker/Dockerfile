@@ -18,8 +18,6 @@ ENV CONTAINER_SRC=${CONTAINER_SRC:-/usr/backend}
 USER $USER
 WORKDIR $CONTAINER_SRC
 
-# Create User Home Directory (in case it is needed)
-RUN mkdir -p /home/user && chown -R $USER /home/user
 
 # Build Context 
 COPY ./src .
