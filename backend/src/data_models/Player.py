@@ -9,7 +9,7 @@ class Player(BaseModel):
     offense: int = Field(ge=0, le=5)
     distribution: int = Field(ge=0, le=5)
     defense: int = Field(ge=0, le=5)
-    injury_handicap: float = Field(ge=0.0, le=1.0)
+    injury_handicap: float = Field(ge=-3.0, le=3.0)
 
     @property
     def offense_defense_ratio(self) -> float:

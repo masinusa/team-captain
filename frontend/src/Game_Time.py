@@ -1,4 +1,5 @@
 import os
+import base64
 
 import streamlit as st
 import requests
@@ -6,6 +7,18 @@ from pydantic import validate_call, BaseModel, Field
 
 from player_database import list_players, get_player
 
+# Read the gif once at the top
+file_ = open("./bouncing_soccer_ball.gif", "rb")
+contents = file_.read()
+data_url = base64.b64encode(contents).decode("utf-8")
+file_.close()
+
+# Set page configuration
+st.set_page_config(
+    page_title="Team Captain - Game Time",
+    page_icon=f"data:image/gif;base64,{data_url}",
+    layout="wide"
+)
 
 BACKEND_URL = f"http://{os.getenv("BACKEND_HOSTNAME")}:{os.getenv("BACKEND_PORT")}"  # Adjust URL as needed
 
@@ -41,9 +54,16 @@ def visualize_team(team: list[dict]):
 def main():
     st.title("Team Split") 
     
-    # Add bouncing soccer ball gif
-    st.markdown("<img src='bouncing_soccer_ball.gif' width='100'>", unsafe_allow_html=True)
+    # Add bouncing soccer ball gif, centered and with rounded edges
+    st.sidebar.markdown(
+        f'<div style="display: flex; justify-content: center;">'
+        f'<img src="data:image/gif;base64,{data_url}" alt="bouncing soccer ball gif" '
+        f'style="border-radius: 16px; width: 100px; height: 100px; object-fit: cover;">'
+        f'</div>',
+        unsafe_allow_html=True
+    )
 
+    
     # Get all players from the database
     all_players = list_players()
     player_names = [player["name"] for player in all_players]
@@ -57,6 +77,7 @@ def main():
 
     # Validate selection
     num_selected = len(selected_players)
+    st.write(f"Number of players selected: {num_selected}")
     if num_selected < 2:
         st.warning("Please select at least 2 players")
     elif num_selected > 18:

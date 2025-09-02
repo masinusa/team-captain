@@ -24,10 +24,10 @@ def add_player_view(st_context):
     
     # Input fields for player data
     player_name = st_context.text_input("Player Name")
-    distribution = st_context.slider("Distribution Score", 0, 10, 5, step=1, key="add_distribution")
-    offense = st_context.slider("Offense Score", 0, 10, 5, step=1, key="add_offense")
-    defense = st_context.slider("Defense Score", 0, 10, 5, step=1, key="add_defense")
-    modifier = st_context.slider("Modifier", -2.0, 2.0, 0.0, step=0.1, key="add_modifier")
+    distribution = st_context.slider("Distribution Score", 0, 5, 2, step=1, key="add_distribution")
+    offense = st_context.slider("Offense Score", 0, 5, 2, step=1, key="add_offense")
+    defense = st_context.slider("Defense Score", 0, 5, 2, step=1, key="add_defense")
+    modifier = st_context.slider("Modifier", -3.0, 3.0, 0.0, step=0.1, key="add_modifier")
     notes = st_context.text_area("Notes", "", key="add_notes")
     
     if st_context.button("Add Player"):
@@ -61,28 +61,28 @@ def edit_player_view(st_context, player_names: list[str]):
         # Input fields for updating scores
         distribution = st_context.slider(
             "Distribution Score", 
-            0, 10, 
+            0, 5, 
             int(player_data["distribution"]),
             step=1,
             key="edit_distribution"
         )
         offense = st_context.slider(
             "Offense Score", 
-            0, 10, 
+            0, 5, 
             int(player_data["offense"]),
             step=1,
             key="edit_offense"
         )
         defense = st_context.slider(
             "Defense Score", 
-            0, 10, 
+            0, 5, 
             int(player_data["defense"]),
             step=1,
             key="edit_defensive"
         )
         modifier = st_context.slider(
             "Modifier",
-            -2.0, 2.0,
+            -3.0, 3.0,
             float(player_data.get("modifier", 0.0)),
             step=0.1,
             key="edit_modifier"
@@ -105,10 +105,16 @@ def main():
     data_url = base64.b64encode(contents).decode("utf-8")
     file_.close()
 
-    st.markdown(
-        f'<img src="data:image/gif;base64,{data_url}" alt="bouncing soccer ball gif">',
-        unsafe_allow_html=True,
+    # Add bouncing soccer ball gif, centered and with rounded edges
+    st.sidebar.markdown(
+        f'<div style="display: flex; justify-content: center;">'
+        f'<img src="data:image/gif;base64,{data_url}" alt="bouncing soccer ball gif" '
+        f'style="border-radius: 16px; width: 100px; height: 100px; object-fit: cover;">'
+        f'</div>',
+        unsafe_allow_html=True
     )
+
+    
 
     # Main area shows the player database
     database_view(st)
