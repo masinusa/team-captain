@@ -68,11 +68,16 @@ def main():
     all_players = list_players()
     player_names = sorted([player["name"] for player in all_players])
 
+    # Initialize session state for player selection persistence across page navigations
+    if "selected_players" not in st.session_state:
+        st.session_state.selected_players = []
+
     # Player selection
     st.header("Select Players")
     selected_players = st.multiselect(
         "Choose 2-18 players to split into teams:",
-        options=player_names
+        options=player_names,
+        key="selected_players"
     )
 
     # Validate selection
