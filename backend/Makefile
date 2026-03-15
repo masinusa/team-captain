@@ -6,14 +6,14 @@ export CURRENT_UID=$(id -u):$(id -g)
 include local.env
 export
 
-deploy_local:
+up:
 	@echo "Backend API: http://localhost:${BACKEND_PORT}/docs"
 	@echo "Frontend Streamlit: http://localhost:${FRONTEND_PORT}"
 	@docker compose -f ./local.docker-compose.yaml \
 		--env-file local.env \
-		up 
-	
-	
+		up
+
+
 # cloud_deployment:
 # 	...
 
