@@ -34,6 +34,10 @@ def add_player(name: str, distribution: float, offense: float, defense: float, m
     """Add a new player to the database."""
     session = Session()
     try:
+        existing = session.query(PlayerORM).filter(PlayerORM.name.ilike(name)).first()
+        if existing:
+            st.error(f"A player named '{existing.name}' already exists. Please use a different name.")
+            return
         new_player = PlayerORM(
             name=name,
             distribution_score=distribution,

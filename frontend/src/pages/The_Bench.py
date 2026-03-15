@@ -19,9 +19,9 @@ def database_view(st_context):
     else:
         st.info("No players in the database. Use the sidebar to add players.")
 
-def add_player_view(st_context):
+def add_player_view(st_context, player_names: list[str]):
     st_context.subheader("Add New Player")
-    
+
     # Input fields for player data
     player_name = st_context.text_input("Player Name")
     distribution = st_context.slider("Distribution Score", 0, 5, 2, step=1, key="add_distribution")
@@ -29,10 +29,13 @@ def add_player_view(st_context):
     defense = st_context.slider("Defense Score", 0, 5, 2, step=1, key="add_defense")
     modifier = st_context.slider("Modifier", -3.0, 3.0, 0.0, step=0.1, key="add_modifier")
     notes = st_context.text_area("Notes", "", key="add_notes")
-    
+
     if st_context.button("Add Player"):
-        add_player(player_name, distribution, offense, defense, modifier, notes)
-        st.rerun()
+        if player_name.strip().lower() in [n.lower() for n in player_names]:
+            st_context.error(f"A player named '{player_name}' already exists. Please use a different name.")
+        else:
+            add_player(player_name, distribution, offense, defense, modifier, notes)
+            st.rerun()
 
 def delete_player_view(st_context, player_names: list[str]):
     if not player_names:
@@ -129,7 +132,7 @@ def main():
         player_names = [player["name"] for player in list_players()]
         
         with add_tab:
-            add_player_view(st)
+            add_player_view(st, player_names)
 
         with edit_tab:
             edit_player_view(st, player_names)
