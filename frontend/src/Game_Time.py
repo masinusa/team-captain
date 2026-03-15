@@ -68,9 +68,18 @@ def main():
     all_players = list_players()
     player_names = sorted([player["name"] for player in all_players])
 
-    # Initialize session state for player selection persistence across page navigations
+    # Initialize session state for player selection persistence across page navigations.
+    # Use a separate non-widget key so it survives navigation (Streamlit deletes widget keys on page change).
+    if "persistent_selected_players" not in st.session_state:
+        st.session_state.persistent_selected_players = []
+
+    # Seed the widget key from persistent state when navigating back to this page.
+    # Only do this when the widget key is absent (i.e. after a page navigation cleared it).
+    # Mixing default= and key= causes Streamlit to conflict on every rerun, so we set the
+    # session state directly instead.
     if "selected_players" not in st.session_state:
-        st.session_state.selected_players = []
+        valid_persistent = [p for p in st.session_state.persistent_selected_players if p in player_names]
+        st.session_state.selected_players = valid_persistent
 
     # Player selection
     st.header("Select Players")
@@ -79,6 +88,9 @@ def main():
         options=player_names,
         key="selected_players"
     )
+
+    # Save selection to persistent (non-widget) state so it survives page navigation
+    st.session_state.persistent_selected_players = selected_players
 
     # Validate selection
     num_selected = len(selected_players)
