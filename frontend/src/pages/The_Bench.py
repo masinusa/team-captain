@@ -63,24 +63,25 @@ def edit_player_view(st_context, player_names: list[str]):
     player_data = next((p for p in players if p["name"] == player_to_edit), None)
     
     if player_data:
-        # Input fields for updating scores
+        # Input fields for updating player
+        new_name = st_context.text_input("Player Name", value=player_data["name"], key="edit_name")
         distribution = st_context.slider(
-            "Distribution Score", 
-            0, 5, 
+            "Distribution Score",
+            0, 5,
             int(player_data["distribution"]),
             step=1,
             key="edit_distribution"
         )
         offense = st_context.slider(
-            "Offense Score", 
-            0, 5, 
+            "Offense Score",
+            0, 5,
             int(player_data["offense"]),
             step=1,
             key="edit_offense"
         )
         defense = st_context.slider(
-            "Defense Score", 
-            0, 5, 
+            "Defense Score",
+            0, 5,
             int(player_data["defense"]),
             step=1,
             key="edit_defensive"
@@ -97,9 +98,9 @@ def edit_player_view(st_context, player_names: list[str]):
             player_data.get("notes", ""),
             key="edit_notes"
         )
-        
+
         if st_context.button("Update Player"):
-            update_player(player_to_edit, distribution, offense, defense, modifier, notes)
+            update_player(player_to_edit, distribution, offense, defense, modifier, notes, new_name=new_name)
             st_context.rerun()
 
 def main():

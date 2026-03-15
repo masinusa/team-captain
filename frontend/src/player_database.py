@@ -70,19 +70,25 @@ def delete_player(player_name: str):
     finally:
         session.close()
 
-def update_player(name: str, distribution: float, offense: float, defense: float, modifier: float, notes: str):
-    """Update an existing player's scores in the database."""
+def update_player(name: str, distribution: float, offense: float, defense: float, modifier: float, notes: str, new_name: str = None):
+    """Update an existing player's scores (and optionally name) in the database."""
     session = Session()
     try:
         player = session.query(PlayerORM).filter_by(name=name).first()
         if player:
+            if new_name and new_name.strip() and new_name.strip().lower() != name.lower():
+                existing = session.query(PlayerORM).filter(PlayerORM.name.ilike(new_name.strip())).first()
+                if existing:
+                    st.error(f"A player named '{existing.name}' already exists. Please use a different name.")
+                    return
+                player.name = new_name.strip()
             player.distribution_score = distribution
             player.offense_score = offense
             player.defense_score = defense
             player.modifier = modifier
             player.notes = notes
             session.commit()
-            st.success(f"Successfully updated player: {name}")
+            st.success(f"Successfully updated player: {player.name}")
         else:
             st.error(f"Player {name} not found.")
     except Exception as e:
