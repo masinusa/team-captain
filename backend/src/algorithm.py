@@ -47,11 +47,13 @@ def select_teams(players: List[Player]) -> Tuple[Team, Team]:
 
     ### Declare variance function to minimize ###
     variance = lambda t1, t2: (
-        abs(t1.average_od_ratio - t2.average_od_ratio)
-        + (
-            1.5 * abs(t1.average_distribution - t2.average_distribution)
-        )  # Weigh distribution more heavily
-        + abs(t1.average_overall_score - t2.average_overall_score)
+        (
+            abs(t1.average_od_ratio - t2.average_od_ratio)
+            + (
+                1.5 * abs(t1.average_distribution - t2.average_distribution)
+            )  # Weigh distribution more heavily
+            + abs(t1.average_overall_score - t2.average_overall_score)
+        ) ** 2
     )
 
     min_var = variance(team1, team2)

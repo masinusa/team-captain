@@ -12,10 +12,12 @@ def database_view(st_context):
     players = list_players()
 
     if players:
+        # Sort players by name for display
+        players_sorted = sorted(players, key=lambda x: x['name'])
         # Use a larger dataframe in the main area with expanded width
-        st.dataframe(players, use_container_width=True)
+        st.dataframe(players_sorted, use_container_width=True)
         
-        player_names = [player["name"] for player in players]
+        player_names = [player['name'] for player in players_sorted]
     else:
         st.info("No players in the database. Use the sidebar to add players.")
 
@@ -24,9 +26,9 @@ def add_player_view(st_context, player_names: list[str]):
 
     # Input fields for player data
     player_name = st_context.text_input("Player Name")
-    distribution = st_context.slider("Distribution Score", 0, 5, 2, step=1, key="add_distribution")
-    offense = st_context.slider("Offense Score", 0, 5, 2, step=1, key="add_offense")
-    defense = st_context.slider("Defense Score", 0, 5, 2, step=1, key="add_defense")
+    distribution = st_context.slider("Distribution Score", 1, 5, 2, step=1, key="add_distribution")
+    offense = st_context.slider("Offense Score", 1, 5, 2, step=1, key="add_offense")
+    defense = st_context.slider("Defense Score", 1, 5, 2, step=1, key="add_defense")
     modifier = st_context.slider("Modifier", -3.0, 3.0, 0.0, step=0.1, key="add_modifier")
     notes = st_context.text_area("Notes", "", key="add_notes")
 
@@ -129,7 +131,7 @@ def main():
         add_tab, edit_tab, delete_tab = st.tabs(["Add", "Edit", "Delete"])
         
         # Get player names once to use in multiple tabs
-        player_names = [player["name"] for player in list_players()]
+        player_names = sorted([player["name"] for player in list_players()])
         
         with add_tab:
             add_player_view(st, player_names)

@@ -123,6 +123,18 @@ TEAM_POSITION_MAPPINGS: Dict[int, List[str]] = {
         "right_mid",
         "goalkeeper",
     ],
+    10: [
+        "forward",
+        "cam",
+        "center_mid", 
+        "cdm",
+        "center_back",
+        "left_back",
+        "right_back",
+        "left_mid",
+        "right_mid",
+        "goalkeeper",
+    ],
 }
 
 

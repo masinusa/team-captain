@@ -66,7 +66,7 @@ def main():
     
     # Get all players from the database
     all_players = list_players()
-    player_names = [player["name"] for player in all_players]
+    player_names = sorted([player["name"] for player in all_players])
 
     # Player selection
     st.header("Select Players")
@@ -80,8 +80,8 @@ def main():
     st.write(f"Number of players selected: {num_selected}")
     if num_selected < 2:
         st.warning("Please select at least 2 players")
-    elif num_selected > 18:
-        st.error("Maximum 18 players allowed")
+    elif num_selected > 20:
+        st.error("Maximum 20 players allowed")
     else:
         if st.button("Split Teams"):
             # Convert selected player names to player data
@@ -106,17 +106,15 @@ def main():
                     print(team_1)
                     visual = visualize_team(team_1)
                     st.image(visual, caption="Team 1 Visualization", use_container_width=True)
-                    for player in team_1:
-                        print(player)
-                        st.write(player["name"])
+                    player_names = [player["name"] for player in team_1]
+                    st.markdown("<br>".join(player_names), unsafe_allow_html=True)
                 with col2:
                     st.write("Team 2")
                     team_2 = teams.get("team2")
                     visual = visualize_team(team_2)
                     st.image(visual, caption="Team 2 Visualization", use_container_width=True)
-                    for player in team_2:
-                        print(player)
-                        st.write(player["name"])
+                    player_names = [player["name"] for player in team_2]
+                    st.markdown("<br>".join(player_names), unsafe_allow_html=True)
                 # Visualize teams after displaying names
                 
 
