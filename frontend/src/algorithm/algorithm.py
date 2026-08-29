@@ -3,10 +3,10 @@ from typing import List, Tuple
 
 from pydantic import validate_call
 
-from data_models import Player
-from data_models.Team import Team
-from utils import coin_flip, swap_items
-from algorithm_utils import balanced_partition
+from .data_models import Player
+from .data_models.Team import Team
+from .utils import coin_flip, swap_items
+from .algorithm_utils import balanced_partition
 
 @validate_call
 def select_teams(players: List[Player]) -> Tuple[Team, Team]:
@@ -83,7 +83,7 @@ def select_teams(players: List[Player]) -> Tuple[Team, Team]:
     while t1p1_index <= len(
         team1.players
     ):  # until all possible players have been swapped
-        t1p2_index = (t1p2_index + 1) % len(team2.players)  # increment t2p2
+        t1p2_index = (t1p2_index + 1) % len(team1.players)  # increment t1p2
         if t1p2_index == 0:
             t1p1_index += 1
             # print(

@@ -1,11 +1,10 @@
-import os
 import base64
 
 import streamlit as st
-import requests
-from pydantic import validate_call, BaseModel, Field
+from pydantic import validate_call
 
 from player_database import list_players, get_player
+from algorithm import select_teams, create_visualization, Player, Team
 
 # Read the gif once at the top
 file_ = open("./bouncing_soccer_ball.gif", "rb")
@@ -20,34 +19,32 @@ st.set_page_config(
     layout="wide"
 )
 
-BACKEND_URL = f"http://{os.getenv("BACKEND_HOSTNAME")}:{os.getenv("BACKEND_PORT")}"  # Adjust URL as needed
-
 @validate_call
 def get_teams(selected_players: list[dict]) -> dict:
-    """Fetch teams from the backend based on selected players."""
-    target_url = BACKEND_URL + "/select_teams"
+    """Split the selected players into two balanced teams, entirely locally."""
     try:
-        # change the field name of each selected player from 'modifier' to 'injury_handicap'
+        players = []
         for player in selected_players:
-            player["injury_handicap"] = player.pop("modifier", 0.0) 
-        response = requests.post(target_url, json={"players": selected_players})
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Failed to connect to the server: {str(e)}")
+            player_data = dict(player)
+            player_data["injury_handicap"] = player_data.pop("modifier", 0.0)
+            players.append(Player(**player_data))
+        team1, team2 = select_teams(players)
+        return {
+            "team1": [player.model_dump() for player in team1.players],
+            "team2": [player.model_dump() for player in team2.players],
+        }
+    except ValueError as e:
+        st.error(f"Could not split teams: {str(e)}")
         return {}
 
 @validate_call
 def visualize_team(team: list[dict]):
-    """Fetch and display team visualizations from the backend for each team."""
-    target_url = BACKEND_URL + "/visualize_team"
-
+    """Render the pitch visualization for a team, entirely locally."""
     try:
-        response = requests.post(target_url, json={"players": team})
-        response.raise_for_status()
-        return response.content  # Return the image bytes
-    except requests.exceptions.RequestException as e:
-        st.error(f"Failed to fetch visualization for {team}: {str(e)}")
+        players = [Player(**player) for player in team]
+        return create_visualization(Team(players=players))
+    except ValueError as e:
+        st.error(f"Failed to visualize team {team}: {str(e)}")
         return None
 
 
@@ -111,7 +108,7 @@ def main():
                     st.error(f"Could not retrieve data for player: {player_name}")
                     return
             
-            # Send request to backend with player data
+            # Split the players into two balanced teams, entirely locally
             teams = get_teams(players)
             if teams:
                 # Display the teams
@@ -120,20 +117,24 @@ def main():
                 with col1:
                     st.write("Team 1")
                     team_1 = teams.get("team1")
-                    print(team_1)
                     visual = visualize_team(team_1)
-                    st.image(visual, caption="Team 1 Visualization", use_container_width=True)
+                    if visual:
+                        fig = visual.gcf()
+                        st.pyplot(fig)
+                        visual.close(fig)
                     player_names = [player["name"] for player in team_1]
                     st.markdown("<br>".join(player_names), unsafe_allow_html=True)
                 with col2:
                     st.write("Team 2")
                     team_2 = teams.get("team2")
                     visual = visualize_team(team_2)
-                    st.image(visual, caption="Team 2 Visualization", use_container_width=True)
+                    if visual:
+                        fig = visual.gcf()
+                        st.pyplot(fig)
+                        visual.close(fig)
                     player_names = [player["name"] for player in team_2]
                     st.markdown("<br>".join(player_names), unsafe_allow_html=True)
-                # Visualize teams after displaying names
-                
+
 
 
 if __name__ == "__main__":

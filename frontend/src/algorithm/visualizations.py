@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 from mplsoccer import VerticalPitch
 from pydantic import BaseModel, validate_call
 
-from data_models import Player, Team
-from utils import swap_items, swap_dict_keys
+from .data_models import Player, Team
+from .utils import swap_items, swap_dict_keys
 
 
 def pop_player(

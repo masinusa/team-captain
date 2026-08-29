@@ -5,7 +5,7 @@ import inspect
 
 from pydantic import validate_call
 
-from data_models import Player
+from .data_models import Player
 
 
 def this_file_dir():

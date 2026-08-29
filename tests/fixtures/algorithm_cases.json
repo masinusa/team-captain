@@ -1,0 +1,30 @@
+{
+  "description": "Deterministic scoring test cases for the team-selection algorithm. Any native port (Swift/Kotlin) must reproduce these exact values. This file is duplicated verbatim into team-picker-ios and team-picker-android. Note: select_teams() itself uses randomness (shuffle + probabilistic swap search), so the *team assignment* is not pinned down here -- see docs/algorithm_spec.md for its approach.",
+  "players": [
+    {
+      "input": {"name": "Alice", "offense": 4, "distribution": 3, "defense": 2, "injury_handicap": 0.0},
+      "expected": {"offense_defense_ratio": 2.0, "overall_score": 3.0}
+    },
+    {
+      "input": {"name": "Bob", "offense": 2, "distribution": 5, "defense": 4, "injury_handicap": -1.0},
+      "expected": {"offense_defense_ratio": 0.5, "overall_score": 4.0}
+    },
+    {
+      "input": {"name": "Cara", "offense": 5, "distribution": 1, "defense": 3, "injury_handicap": 0.0},
+      "expected": {"offense_defense_ratio": 1.6666666666666667, "overall_score": 3.0}
+    },
+    {
+      "input": {"name": "Dan", "offense": 0, "distribution": 2, "defense": 0, "injury_handicap": 2.0},
+      "expected": {"offense_defense_ratio": 0, "overall_score": 0.0}
+    }
+  ],
+  "team_aggregate": {
+    "description": "Aggregate stats when all four players above are grouped into a single team.",
+    "players": ["Alice", "Bob", "Cara", "Dan"],
+    "expected": {
+      "average_od_ratio": 1.0416666666666667,
+      "average_distribution": 2.75,
+      "average_overall_score": 2.5
+    }
+  }
+}

@@ -3,7 +3,7 @@ import statistics
 
 from pydantic import BaseModel, validate_call
 
-from data_models import Player
+from . import Player
 
 
 class Team(BaseModel):

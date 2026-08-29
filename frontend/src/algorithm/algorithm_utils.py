@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 
-from data_models import Team, Player
+from .data_models import Team, Player
 
 
 def balanced_partition(
