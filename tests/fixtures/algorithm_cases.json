@@ -1,5 +1,5 @@
 {
-  "description": "Deterministic scoring test cases for the team-selection algorithm. Any native port (Swift/Kotlin) must reproduce these exact values. This file is duplicated verbatim into team-picker-ios and team-picker-android. Note: select_teams() itself uses randomness (shuffle + probabilistic swap search), so the *team assignment* is not pinned down here -- see docs/algorithm_spec.md for its approach.",
+  "description": "Deterministic scoring test cases for the team-selection algorithm. Any native port (Swift/Kotlin) must reproduce these exact values. This file is duplicated verbatim into team-captain-ios and team-captain-android. Note: select_teams() itself uses randomness (shuffle + probabilistic swap search), so the *team assignment* is not pinned down here -- see docs/algorithm_spec.md for its approach.",
   "players": [
     {
       "input": {"name": "Alice", "offense": 4, "distribution": 3, "defense": 2, "injury_handicap": 0.0},

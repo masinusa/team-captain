@@ -1,8 +1,8 @@
 # Team-Selection Algorithm Spec
 
 This document is the source of truth for porting the team-selection algorithm
-to a new platform (e.g. native Swift for `team-picker-ios`, native Kotlin for
-`team-picker-android`). It must run **entirely locally, with no network
+to a new platform (e.g. native Swift for `team-captain-ios`, native Kotlin for
+`team-captain-android`). It must run **entirely locally, with no network
 calls** — the reference implementation lives in
 `frontend/src/algorithm/` in this repo (Python).
 

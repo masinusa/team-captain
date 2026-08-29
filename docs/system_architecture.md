@@ -10,12 +10,12 @@ flowchart LR
         SDB[(Player DB)]
         SA[Algorithm - Python]
     end
-    subgraph ios[team-picker-ios]
+    subgraph ios[team-captain-ios]
         IF[SwiftUI App]
         IDB[(Player DB)]
         IA[Algorithm - Swift]
     end
-    subgraph android[team-picker-android]
+    subgraph android[team-captain-android]
         AF[Kotlin App]
         ADB[(Player DB)]
         AA[Algorithm - Kotlin]

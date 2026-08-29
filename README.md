@@ -8,8 +8,8 @@ in-process, with no server to reach.
 
 Sibling repos, each a native app with their own local implementation of the
 same algorithm (see [docs/algorithm_spec.md](docs/algorithm_spec.md)):
-- [team-picker-ios](https://github.com/masinusa/team-picker-ios) — native SwiftUI
-- [team-picker-android](https://github.com/masinusa/team-picker-android) — native Kotlin
+- [team-captain-ios](https://github.com/masinusa/team-captain-ios) — native SwiftUI
+- [team-captain-android](https://github.com/masinusa/team-captain-android) — native Kotlin
 
 See [docs/system_architecture.md](docs/system_architecture.md) for the overall
 architecture.
