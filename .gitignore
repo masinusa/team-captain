@@ -209,3 +209,7 @@ __marimo__/
 
 # Custom
 *.db
+
+# Claude Code scratch worktrees (full repo copies — never commit these).
+# .claude/skills/ IS tracked; only worktrees are excluded.
+.claude/worktrees/
