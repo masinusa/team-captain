@@ -59,6 +59,25 @@ def _json_list(value: str | None) -> list[str]:
     return parsed
 
 
+def _normalize_aliases(candidates: list[str], owner_name: str) -> list[str]:
+    """Clean a set of alternate names for one player.
+
+    Trims, drops blanks, and dedupes case-insensitively while keeping the first
+    spelling seen. The player's own canonical name is never kept as an alias of
+    itself. Blank entries must not survive: the iOS record validator rejects
+    them outright, so one would break sync rather than fail here.
+    """
+    aliases: list[str] = []
+    seen = {owner_name.strip().lower()}
+    for candidate in candidates:
+        cleaned = candidate.strip()
+        key = cleaned.lower()
+        if cleaned and key not in seen:
+            seen.add(key)
+            aliases.append(cleaned)
+    return aliases
+
+
 def _validate_player(
     name: str, distribution: float, offense: float, defense: float, modifier: float
 ) -> None:
@@ -345,15 +364,10 @@ def merge_players(winner_id: str, loser_id: str) -> dict:
         if not loser or loser.deleted_at:
             raise ValueError("Merged player not found.")
 
-        # Case-insensitive dedupe that preserves the first spelling seen and
-        # never records the winner's own name as an alias of itself.
-        aliases: list[str] = []
-        seen = {winner.name.strip().lower()}
-        for candidate in _json_list(winner.aliases) + [loser.name] + _json_list(loser.aliases):
-            key = candidate.strip().lower()
-            if key and key not in seen:
-                seen.add(key)
-                aliases.append(candidate.strip())
+        aliases = _normalize_aliases(
+            _json_list(winner.aliases) + [loser.name] + _json_list(loser.aliases),
+            winner.name,
+        )
 
         # Carry the loser's own redirects across so a chain of merges keeps
         # resolving rather than dead-ending at the intermediate record.
@@ -390,8 +404,14 @@ def update_player(
     defense: float,
     modifier: float,
     notes: str,
+    aliases: list[str] | None = None,
 ) -> dict:
-    """Update a live player by immutable UUID."""
+    """Update a live player by immutable UUID.
+
+    ``aliases`` defaults to None meaning "leave unchanged", so existing
+    positional callers keep working. Passing a list replaces the alternate
+    names wholesale; pass [] to clear them.
+    """
     _validate_player(name, distribution, offense, defense, modifier)
     session = Session()
     try:
@@ -412,12 +432,52 @@ def update_player(
         player.defense_score = int(defense)
         player.modifier = float(modifier)
         player.notes = notes
+        if aliases is not None:
+            player.aliases = json.dumps(_normalize_aliases(aliases, player.name))
+        elif player.name.strip().lower() in {
+            alias.strip().lower() for alias in _json_list(player.aliases)
+        }:
+            # A rename can collide with an existing alias, which would leave the
+            # player listed as an alias of itself.
+            player.aliases = json.dumps(
+                _normalize_aliases(_json_list(player.aliases), player.name)
+            )
         player.updated_at = _utc_now()
         session.commit()
         return _player_dict(player)
     except Exception:
         session.rollback()
         raise
+    finally:
+        session.close()
+
+
+def resolve_player_id(player_id: str) -> str | None:
+    """Follow a merge redirect to the player that absorbed this identifier.
+
+    Returns the id unchanged when it still names a live player, the surviving
+    player's id when it was merged away, or None when it resolves to nothing.
+
+    This is F-006.5: game history and saved selections keep referring to
+    identifiers that a later merge tombstoned, and those references are meant to
+    keep resolving rather than dangling.
+    """
+    canonical = _canonical_id(player_id)
+    session = Session()
+    try:
+        live = (
+            session.query(PlayerORM)
+            .filter_by(player_id=canonical, deleted_at=None)
+            .first()
+        )
+        if live:
+            return live.player_id
+        # A merge chain is stored flattened -- merge_players carries the loser's
+        # own redirects onto the winner -- so one pass is enough.
+        for candidate in session.query(PlayerORM).filter(PlayerORM.deleted_at.is_(None)):
+            if canonical in _json_list(candidate.merged_from):
+                return candidate.player_id
+        return None
     finally:
         session.close()
 

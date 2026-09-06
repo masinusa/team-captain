@@ -7,7 +7,7 @@ from urllib import error, request as urlrequest
 import streamlit as st
 from pydantic import validate_call
 
-from player_database import list_players, get_player
+from player_database import list_players, get_player, resolve_player_id
 from algorithm import select_teams, create_visualization, Player, Team
 
 # Read the gif once at the top
@@ -97,7 +97,16 @@ def main():
     
     # Get all players from the database
     all_players = list_players()
-    player_options = {player["id"]: player["name"] for player in all_players}
+    # Show aliases in the label so the multiselect's own filtering matches them
+    # too -- typing "Mike" finds "Michael Spicer (Mike)". This is F-006.2.
+    player_options = {
+        player["id"]: (
+            f"{player['name']} ({', '.join(player['aliases'])})"
+            if player["aliases"]
+            else player["name"]
+        )
+        for player in all_players
+    }
 
     # Initialize session state for player selection persistence across page navigations.
     # Use a separate non-widget key so it survives navigation (Streamlit deletes widget keys on page change).
@@ -140,9 +149,14 @@ def main():
             # Convert selected player IDs to player data.
             players = []
             for player_id in selected_players:
-                player_data = get_player(player_id)
+                # A player selected here can be merged away on The Bench before
+                # the split runs. Follow the redirect so the selection survives
+                # instead of dead-ending (F-006.5).
+                resolved_id = resolve_player_id(player_id) or player_id
+                player_data = get_player(resolved_id)
                 if player_data:
-                    players.append(player_data)
+                    if not any(p["id"] == player_data["id"] for p in players):
+                        players.append(player_data)
                 else:
                     st.error("Could not retrieve a selected player.")
                     return

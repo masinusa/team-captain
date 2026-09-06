@@ -4,6 +4,7 @@ import sqlite3
 import sys
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 
 
@@ -158,6 +159,87 @@ class PlayerSchemaTests(unittest.TestCase):
         database.delete_player(b["id"])
         with self.assertRaises(ValueError):
             database.merge_players(a["id"], b["id"])
+
+    def test_update_player_edits_aliases_and_normalizes_them(self):
+        self._legacy_database()
+        database = self._database()
+        player = database.add_player("Michael Spicer", 3, 3, 3)
+
+        updated = database.update_player(
+            player["id"], "Michael Spicer", 3, 3, 3, 0.0, "",
+            aliases=["  Mike  ", "", "spice", "SPICE", "Michael Spicer"],
+        )
+
+        # Trimmed, blanks dropped, case-insensitive dedupe keeping the first
+        # spelling, and the player's own name never becomes a self-alias.
+        self.assertEqual(updated["aliases"], ["Mike", "spice"])
+
+    def test_update_player_leaves_aliases_alone_by_default(self):
+        self._legacy_database()
+        database = self._database()
+        player = database.add_player("Michael Spicer", 3, 3, 3)
+        database.update_player(
+            player["id"], "Michael Spicer", 3, 3, 3, 0.0, "", aliases=["Mike"]
+        )
+
+        # The existing 7-argument positional call must keep working untouched.
+        # Note the order is distribution, offense, defense.
+        updated = database.update_player(player["id"], "Michael Spicer", 4, 3, 3, 0.0, "")
+        self.assertEqual(updated["aliases"], ["Mike"])
+        self.assertEqual(updated["distribution"], 4)
+
+        cleared = database.update_player(
+            player["id"], "Michael Spicer", 4, 3, 3, 0.0, "", aliases=[]
+        )
+        self.assertEqual(cleared["aliases"], [])
+
+    def test_renaming_onto_an_alias_does_not_self_alias(self):
+        self._legacy_database()
+        database = self._database()
+        player = database.add_player("Michael Spicer", 3, 3, 3)
+        database.update_player(
+            player["id"], "Michael Spicer", 3, 3, 3, 0.0, "", aliases=["Mike"]
+        )
+
+        renamed = database.update_player(player["id"], "Mike", 3, 3, 3, 0.0, "")
+        self.assertEqual(renamed["name"], "Mike")
+        self.assertEqual(renamed["aliases"], [])
+
+    def test_resolve_player_id_follows_a_merge(self):
+        self._legacy_database()
+        database = self._database()
+        winner = database.add_player("Michael Spicer", 3, 3, 3)
+        loser = database.add_player("Mike", 3, 3, 3)
+        database.merge_players(winner["id"], loser["id"])
+
+        # A reference to the merged-away player still resolves (F-006.5).
+        self.assertEqual(database.resolve_player_id(loser["id"]), winner["id"])
+        # A live id resolves to itself.
+        self.assertEqual(database.resolve_player_id(winner["id"]), winner["id"])
+        # An unknown id resolves to nothing rather than raising.
+        self.assertIsNone(database.resolve_player_id(str(uuid.uuid4())))
+
+    def test_resolve_player_id_follows_a_chain_of_merges(self):
+        self._legacy_database()
+        database = self._database()
+        a = database.add_player("Ana", 3, 3, 3)
+        b = database.add_player("Annie", 3, 3, 3)
+        c = database.add_player("Anna", 3, 3, 3)
+        database.merge_players(b["id"], c["id"])
+        database.merge_players(a["id"], b["id"])
+
+        # c was merged into b, then b into a -- c must not dead-end at b.
+        self.assertEqual(database.resolve_player_id(c["id"]), a["id"])
+        self.assertEqual(database.resolve_player_id(b["id"]), a["id"])
+
+    def test_resolve_player_id_returns_none_for_a_plain_deletion(self):
+        self._legacy_database()
+        database = self._database()
+        player = database.add_player("Ana", 3, 3, 3)
+        database.delete_player(player["id"])
+
+        # Deleted, not merged -- there is no survivor to redirect to.
+        self.assertIsNone(database.resolve_player_id(player["id"]))
 
     def test_unique_index_is_created_when_no_duplicates_exist(self):
         self._legacy_database()
