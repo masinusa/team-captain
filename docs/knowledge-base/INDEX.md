@@ -32,7 +32,7 @@ F-1xx algorithm ............... 105
 | `F-003` | Edit a player | web | implemented | — |
 | `F-004` | Delete a player | web | implemented | — |
 | `F-005` | Search / filter the player list | ios | not implemented | — |
-| `F-006` | Player identity, aliases, and duplicate merge | web | not implemented | [features/F-006-player-identity-and-aliases.md](features/F-006-player-identity-and-aliases.md) |
+| `F-006` | Player identity, aliases, and duplicate merge | web | partial | [features/F-006-player-identity-and-aliases.md](features/F-006-player-identity-and-aliases.md) |
 | `F-020` | Player selection for a split | web | implemented | [features/F-020-player-selection.md](features/F-020-player-selection.md) |
 | `F-021` | Team generation | web | implemented | [features/F-021-team-generation.md](features/F-021-team-generation.md) |
 | `F-022` | Pitch visualization | web | implemented | — |

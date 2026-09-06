@@ -63,7 +63,7 @@ def main():
     
     # Get all players from the database
     all_players = list_players()
-    player_names = sorted([player["name"] for player in all_players])
+    player_options = {player["id"]: player["name"] for player in all_players}
 
     # Initialize session state for player selection persistence across page navigations.
     # Use a separate non-widget key so it survives navigation (Streamlit deletes widget keys on page change).
@@ -75,14 +75,19 @@ def main():
     # Mixing default= and key= causes Streamlit to conflict on every rerun, so we set the
     # session state directly instead.
     if "selected_players" not in st.session_state:
-        valid_persistent = [p for p in st.session_state.persistent_selected_players if p in player_names]
+        valid_persistent = [
+            player_id
+            for player_id in st.session_state.persistent_selected_players
+            if player_id in player_options
+        ]
         st.session_state.selected_players = valid_persistent
 
     # Player selection
     st.header("Select Players")
     selected_players = st.multiselect(
         "Choose 2-18 players to split into teams:",
-        options=player_names,
+        options=list(player_options),
+        format_func=lambda player_id: player_options[player_id],
         key="selected_players"
     )
 
@@ -98,14 +103,14 @@ def main():
         st.error("Maximum 20 players allowed")
     else:
         if st.button("Split Teams"):
-            # Convert selected player names to player data
+            # Convert selected player IDs to player data.
             players = []
-            for player_name in selected_players:
-                player_data = get_player(player_name)
+            for player_id in selected_players:
+                player_data = get_player(player_id)
                 if player_data:
                     players.append(player_data)
                 else:
-                    st.error(f"Could not retrieve data for player: {player_name}")
+                    st.error("Could not retrieve a selected player.")
                     return
             
             # Split the players into two balanced teams, entirely locally

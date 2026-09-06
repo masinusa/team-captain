@@ -99,25 +99,27 @@ game is touched.
 
 ## Web client
 
-**Status:** not implemented
-**Code:** —
+**Status:** partial
+**Code:** `frontend/src/player_database.py`, `frontend/src/backup.py`,
+`frontend/src/pages/The_Bench.py`, `frontend/src/Game_Time.py`
 
-The web client currently has no stable identity at all. `players.id` is a SQLite
-autoincrement rowid that is never read, never exported, and differs per device;
-every operation keys off the name string. There is no alias, timestamp, or
-tombstone field.
+The web client now migrates legacy SQLite rows to stable uppercase UUIDs,
+persists aliases, UTC lifecycle timestamps, tombstones, and merge provenance,
+and uses UUIDs for player CRUD and team selection. Its backup helpers read and
+write the version-1 shared record.
 
 **Known gaps:**
 
-- `get_player`, `update_player` and `delete_player` match names
-  case-sensitively while `add_player` guards uniqueness case-insensitively, so
-  a row whose stored casing differs from the queried casing is unreachable.
-  Keying on `id` removes this class of bug entirely.
-- `backup.py` matches on lowercased name and never deletes, so a player removed
-  on one device is resurrected by the next import.
+- Aliases are not yet searchable (F-006.2).
+- There is no explicit duplicate-merge action or redirect resolution
+  (F-006.4–F-006.5); `merged_from` is stored for a later merge workflow.
+- Backup helpers are not exposed in the Streamlit UI, and no cloud sync client
+  is wired (F-083).
 
 ## History
 
 - 2026-09-06 — Created. Defines the shared record for cross-device sync, after
   finding that iOS keys players by UUID and the web client keys them by name,
   which would detach every historical goal on first sync.
+- 2026-09-06 — Began the foundation migration: legacy records receive stable
+  identities and lifecycle metadata before sync or merge UX is introduced.
