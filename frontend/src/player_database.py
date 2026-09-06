@@ -158,6 +158,39 @@ def _shared_record(record: dict) -> dict:
     }
 
 
+def _refresh_live_name_index() -> list[str]:
+    """Create the live-name uniqueness index once the data permits it.
+
+    Databases created before F-001.5 was enforced can already hold duplicate
+    live names. Creating the index regardless raises IntegrityError inside the
+    migration transaction, which runs at import and would stop the app from
+    starting at all. F-006.3 forbids resolving duplicates automatically, so the
+    blocking names are recorded for the UI to surface and the index is deferred.
+
+    Called again after a merge, so the constraint reappears on its own as soon
+    as the last duplicate is resolved.
+    """
+    with engine.begin() as connection:
+        duplicates = [
+            row[0]
+            for row in connection.execute(
+                text(
+                    "SELECT lower(name) FROM players WHERE deleted_at IS NULL "
+                    "GROUP BY lower(name) HAVING count(*) > 1 ORDER BY lower(name)"
+                )
+            )
+        ]
+        if not duplicates:
+            connection.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS players_live_name_unique "
+                    "ON players(lower(name)) WHERE deleted_at IS NULL"
+                )
+            )
+    DUPLICATE_LIVE_NAMES[:] = duplicates
+    return duplicates
+
+
 def _migrate_schema() -> None:
     """Upgrade existing databases in place without changing migrated values."""
     expected_columns = {
@@ -199,39 +232,20 @@ def _migrate_schema() -> None:
                 ),
                 {**values, "id": row["id"]},
             )
-        # Existing databases predate the uniqueness rule and may already hold
-        # duplicate live names. Creating the index anyway raises IntegrityError
-        # inside this transaction, which aborts the migration at import time and
-        # takes the whole app down. F-006.3 forbids resolving duplicates
-        # automatically, so record them and let the user merge deliberately.
-        DUPLICATE_LIVE_NAMES[:] = [
-            row[0]
-            for row in connection.execute(
-                text(
-                    "SELECT lower(name) FROM players WHERE deleted_at IS NULL "
-                    "GROUP BY lower(name) HAVING count(*) > 1 ORDER BY lower(name)"
-                )
-            )
-        ]
-        if DUPLICATE_LIVE_NAMES:
-            warnings.warn(
-                "Duplicate player names found, so live-name uniqueness is not "
-                "enforced yet: "
-                + ", ".join(DUPLICATE_LIVE_NAMES)
-                + ". Merge them (F-006.4); the index is created automatically "
-                "once none remain.",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-        else:
-            connection.execute(
-                text(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS players_live_name_unique "
-                    "ON players(lower(name)) WHERE deleted_at IS NULL"
-                )
-            )
         connection.execute(
             text("CREATE UNIQUE INDEX IF NOT EXISTS players_player_id_unique ON players(player_id)")
+        )
+
+    _refresh_live_name_index()
+    if DUPLICATE_LIVE_NAMES:
+        warnings.warn(
+            "Duplicate player names found, so live-name uniqueness is not "
+            "enforced yet: "
+            + ", ".join(DUPLICATE_LIVE_NAMES)
+            + ". Merge them (F-006.4); the index is created automatically "
+            "once none remain.",
+            RuntimeWarning,
+            stacklevel=2,
         )
 
 
@@ -303,6 +317,69 @@ def delete_player(player_id: str) -> None:
         raise
     finally:
         session.close()
+
+
+def merge_players(winner_id: str, loser_id: str) -> dict:
+    """Fold one player record into another, per F-006.4.
+
+    The winner keeps its identifier and ratings. The loser's name and aliases
+    become aliases of the winner, its identifier is recorded in the winner's
+    ``merged_from``, and it is tombstoned rather than deleted.
+
+    Nothing in stored game history is rewritten. Games embed player snapshots
+    and key goals by identifier (F-006.5), so ``merged_from`` acts as a
+    forwarding address instead — an old reference to the loser still resolves
+    to the surviving player.
+    """
+    winner_key = _canonical_id(winner_id)
+    loser_key = _canonical_id(loser_id)
+    if winner_key == loser_key:
+        raise ValueError("Cannot merge a player into itself.")
+
+    session = Session()
+    try:
+        winner = session.query(PlayerORM).filter_by(player_id=winner_key).first()
+        loser = session.query(PlayerORM).filter_by(player_id=loser_key).first()
+        if not winner or winner.deleted_at:
+            raise ValueError("Surviving player not found.")
+        if not loser or loser.deleted_at:
+            raise ValueError("Merged player not found.")
+
+        # Case-insensitive dedupe that preserves the first spelling seen and
+        # never records the winner's own name as an alias of itself.
+        aliases: list[str] = []
+        seen = {winner.name.strip().lower()}
+        for candidate in _json_list(winner.aliases) + [loser.name] + _json_list(loser.aliases):
+            key = candidate.strip().lower()
+            if key and key not in seen:
+                seen.add(key)
+                aliases.append(candidate.strip())
+
+        # Carry the loser's own redirects across so a chain of merges keeps
+        # resolving rather than dead-ending at the intermediate record.
+        merged_from: list[str] = []
+        for candidate in _json_list(winner.merged_from) + [loser.player_id] + _json_list(loser.merged_from):
+            key = _canonical_id(candidate)
+            if key != winner_key and key not in merged_from:
+                merged_from.append(key)
+
+        now = _utc_now()
+        winner.aliases = json.dumps(aliases)
+        winner.merged_from = json.dumps(merged_from)
+        winner.updated_at = now
+        loser.deleted_at = now
+        loser.updated_at = now
+        session.commit()
+        merged = _player_dict(winner)
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+    # The merge may have removed the last duplicate blocking the constraint.
+    _refresh_live_name_index()
+    return merged
 
 
 def update_player(

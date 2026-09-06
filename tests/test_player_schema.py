@@ -90,6 +90,75 @@ class PlayerSchemaTests(unittest.TestCase):
         # Deferred, not silently created against violating data.
         self.assertNotIn("players_live_name_unique", indexes)
 
+    def _index_exists(self, name):
+        connection = sqlite3.connect(Path(self.tempdir.name) / "player_database.db")
+        found = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'index'"
+            )
+        }
+        connection.close()
+        return name in found
+
+    def test_merge_folds_loser_into_winner_and_restores_the_index(self):
+        self._legacy_database_with_duplicate_names()
+        database = self._database()
+        self.assertEqual(database.DUPLICATE_LIVE_NAMES, ["marcel"])
+        self.assertFalse(self._index_exists("players_live_name_unique"))
+
+        marcels = [p for p in database.list_players() if p["name"].lower() == "marcel"]
+        winner = next(p for p in marcels if p["notes"] == "good passing")
+        loser = next(p for p in marcels if p["id"] != winner["id"])
+
+        merged = database.merge_players(winner["id"], loser["id"])
+
+        # Winner keeps its identity and its ratings.
+        self.assertEqual(merged["id"], winner["id"])
+        self.assertEqual(merged["notes"], "good passing")
+        # The loser is redirected, not erased.
+        self.assertIn(loser["id"], merged["merged_from"])
+        # Identical names must not become a self-alias.
+        self.assertEqual(merged["aliases"], [])
+
+        live = database.list_players()
+        self.assertEqual(len([p for p in live if p["name"].lower() == "marcel"]), 1)
+        # Tombstoned, so it no longer reads as a live player...
+        self.assertIsNone(database.get_player(loser["id"]))
+        # ...but the record survives, carrying the deletion timestamp that lets
+        # the merge propagate to other devices.
+        archived = database.list_players(include_deleted=True)
+        tombstoned = next(p for p in archived if p["id"] == loser["id"])
+        self.assertIsNotNone(tombstoned["deleted_at"])
+
+        # Resolving the last duplicate reinstates the constraint by itself.
+        self.assertEqual(database.DUPLICATE_LIVE_NAMES, [])
+        self.assertTrue(self._index_exists("players_live_name_unique"))
+
+    def test_merge_keeps_a_differing_name_as_an_alias(self):
+        self._legacy_database()
+        database = self._database()
+        winner = database.add_player("Sam Rodriguez", 3, 3, 3)
+        loser = database.add_player("Sam R", 3, 3, 3)
+
+        merged = database.merge_players(winner["id"], loser["id"])
+
+        self.assertEqual(merged["aliases"], ["Sam R"])
+        self.assertEqual(merged["merged_from"], [loser["id"]])
+
+    def test_merge_rejects_self_and_tombstoned_records(self):
+        self._legacy_database()
+        database = self._database()
+        a = database.add_player("Ana", 3, 3, 3)
+        b = database.add_player("Ben", 3, 3, 3)
+
+        with self.assertRaises(ValueError):
+            database.merge_players(a["id"], a["id"])
+
+        database.delete_player(b["id"])
+        with self.assertRaises(ValueError):
+            database.merge_players(a["id"], b["id"])
+
     def test_unique_index_is_created_when_no_duplicates_exist(self):
         self._legacy_database()
         database = self._database()
