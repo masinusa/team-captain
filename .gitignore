@@ -213,3 +213,15 @@ __marimo__/
 # Claude Code scratch worktrees (full repo copies — never commit these).
 # .claude/skills/ IS tracked; only worktrees are excluded.
 .claude/worktrees/
+# Game Review service (Terraform state + generated secrets)
+game-review/.admin-token
+game-review/.bin/
+game-review/exports/*
+!game-review/exports/.gitkeep
+game-review/terraform/.terraform/
+game-review/terraform/terraform.tfstate
+game-review/terraform/terraform.tfstate.*
+game-review/terraform/*.tfvars
+game-review/terraform/build/
+game-review/terraform/crash.log
+game-review/terraform/crash.*.log
