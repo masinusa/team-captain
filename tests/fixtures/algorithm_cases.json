@@ -14,17 +14,17 @@
       "expected": {"offense_defense_ratio": 1.6666666666666667, "overall_score": 3.0}
     },
     {
-      "input": {"name": "Dan", "offense": 0, "distribution": 2, "defense": 0, "injury_handicap": 2.0},
-      "expected": {"offense_defense_ratio": 0, "overall_score": 0.0}
+      "input": {"name": "Dan", "offense": 1, "distribution": 2, "defense": 1, "injury_handicap": 2.0},
+      "expected": {"offense_defense_ratio": 1.0, "overall_score": 0.6666666666666666}
     }
   ],
   "team_aggregate": {
     "description": "Aggregate stats when all four players above are grouped into a single team.",
     "players": ["Alice", "Bob", "Cara", "Dan"],
     "expected": {
-      "average_od_ratio": 1.0416666666666667,
+      "average_od_ratio": 1.2916666666666667,
       "average_distribution": 2.75,
-      "average_overall_score": 2.5
+      "average_overall_score": 2.6666666666666665
     }
   }
 }

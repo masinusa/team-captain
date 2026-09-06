@@ -15,10 +15,12 @@ where the two disagree, this file wins and the spec should be corrected.
 ## Definition
 
 Given a player with integer ratings `offense`, `distribution`, `defense`
-(each 0–5) and a real `injury_handicap` in −3.0…3.0:
+(each 1–5, see F-001.3) and a real `injury_handicap` in −3.0…3.0:
 
 - **F-100.1** `offense_defense_ratio = offense / defense`, and exactly `0`
-  when `defense == 0`. The zero case is a defined result, not an error.
+  when `defense == 0`. Since F-001.3 requires ratings of 1–5, `defense == 0` is
+  not reachable from valid input; the branch is retained as a guard against
+  bad or legacy data and must not be removed.
 - **F-100.2** `overall_score = mean(offense, distribution - injury_handicap,
   defense)` — the arithmetic mean of those three terms.
 - **F-100.3** A negative `injury_handicap` therefore *raises* a player's
@@ -34,7 +36,12 @@ Given a player with integer ratings `offense`, `distribution`, `defense`
 |---|---|
 | Alice, Cara | ordinary values |
 | Bob | negative `injury_handicap` raising the score (F-100.3) |
-| Dan | `defense == 0` → ratio `0` (F-100.1) |
+| Dan | minimum ratings with a positive `injury_handicap` driving the score toward zero |
+
+Dan previously carried `offense: 0, defense: 0` to pin the `defense == 0`
+branch. Both are invalid under the 1–5 range, so the case was changed to
+`offense: 1, defense: 1`. **The zero-defense guard now has no test**, which is
+acceptable only because it is unreachable from validated input.
 
 **No repository currently has a test harness that runs this fixture.** It is
 copied verbatim into `team-captain-ios` and `team-captain-android` and read by
