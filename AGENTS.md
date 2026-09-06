@@ -84,6 +84,53 @@ all three repos, which is why the `F-101` discrepancy went unnoticed. Building
 a harness here is the highest-leverage available work — mention it if the user
 asks what to do next.
 
+## The player database is real people's data
+
+`frontend/data/player_database.db` holds ~70 real names, each with skill
+ratings and in some cases a free-text note about that person. Treat it as
+personal data, not test fixtures.
+
+- **Never commit it, never paste its contents, never copy it into a scratch
+  directory that outlives the task.** When you need to inspect it, redact
+  names in anything you print.
+- The ignore globs are `*.db`, `*.db.*`, `*.sqlite`, `*.sqlite3`. Keep them
+  wide. A plain `*.db` once failed to match `player_database.db.bak-68players`,
+  leaving a full copy untracked-but-committable.
+- It has already leaked once. A copy reached this repo's public history and
+  the only complete fix was deleting and recreating the GitHub repo.
+
+If you ever have to purge something from history again, two things cost real
+time last round and are worth knowing up front:
+
+1. **Enumerate every historical path first.** The database lived at
+   `services/web_frontend_streamlit/data/player_database.db` before the repo
+   reorganization. Filtering only its current path left the data in branches
+   that predate the move. Run
+   `git rev-list --all --objects | grep -i <name>` and filter *all* the paths
+   it returns, in one pass.
+2. **A force-push does not remove anything from GitHub.** Unreferenced objects
+   stay fetchable by exact SHA until GitHub garbage-collects, which you cannot
+   trigger. Only deleting the repository, or a GitHub Support request, actually
+   removes them. Verify with a fresh clone plus a direct
+   `git fetch origin <old-sha>` — do not assume.
+
+## Working alongside other sessions
+
+This project is often worked on by several Claude sessions at once, in git
+worktrees under `~/orca/workspaces/team-captain/`. Before anything destructive:
+
+- **Never `git worktree remove --force` a worktree you did not create.** That
+  flag exists specifically to override the refusal to delete uncommitted work.
+- **Re-check `git status` immediately before acting on it.** A clean reading
+  goes stale in minutes when another session is live — a worktree that reported
+  zero dirty files was deleted minutes later with 21 new files in it.
+- Prefer committing another session's work to a branch over deleting it.
+
+If work is lost this way it is usually recoverable: the session transcripts in
+`~/.claude/projects/<encoded-cwd>/*.jsonl` record every `Write` and `Edit` tool
+call with full content. Replaying them in timestamp order reconstructs the
+files exactly.
+
 ## Running locally
 
 ```
