@@ -1,13 +1,18 @@
 SHELL := /bin/bash
 
 FRONTEND_PORT ?= 8081
+VENV := .venv
 
-run:
+run: install
 	@echo "Team Captain (web): http://localhost:${FRONTEND_PORT}"
-	@cd frontend/src && streamlit run Game_Time.py --server.port ${FRONTEND_PORT}
+	@cd frontend/src && DATA_DIR=$(CURDIR)/frontend/data ../../$(VENV)/bin/streamlit run Game_Time.py --server.port ${FRONTEND_PORT}
 
-install:
-	pip install -r frontend/docker/requirements.txt
+install: $(VENV)/bin/activate
+
+$(VENV)/bin/activate: frontend/docker/requirements.txt
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -r frontend/docker/requirements.txt
+	touch $(VENV)/bin/activate
 
 docker-build:
 	docker build -t team_captain_web -f frontend/docker/Dockerfile frontend \
