@@ -208,7 +208,13 @@ __marimo__/
 
 
 # Custom
+# The player database holds real people's names and ratings — never commit it.
+# The glob is deliberately wide: a plain *.db missed player_database.db.bak-*,
+# and a copy of it did reach the public repo's history once already.
 *.db
+*.db.*
+*.sqlite
+*.sqlite3
 
 # Claude Code scratch worktrees (full repo copies — never commit these).
 # .claude/skills/ IS tracked; only worktrees are excluded.
