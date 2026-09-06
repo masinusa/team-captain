@@ -5,7 +5,7 @@ VENV := .venv
 
 run: install
 	@echo "Team Captain (web): http://localhost:${FRONTEND_PORT}"
-	@cd frontend/src && ../../$(VENV)/bin/streamlit run Game_Time.py --server.port ${FRONTEND_PORT}
+	@cd frontend/src && DATA_DIR=$(CURDIR)/frontend/data ../../$(VENV)/bin/streamlit run Game_Time.py --server.port ${FRONTEND_PORT}
 
 install: $(VENV)/bin/activate
 
