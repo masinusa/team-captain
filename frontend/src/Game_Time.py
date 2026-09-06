@@ -1,4 +1,8 @@
 import base64
+import json
+import os
+from datetime import date
+from urllib import error, request as urlrequest
 
 import streamlit as st
 from pydantic import validate_call
@@ -46,6 +50,36 @@ def visualize_team(team: list[dict]):
     except ValueError as e:
         st.error(f"Failed to visualize team {team}: {str(e)}")
         return None
+
+
+def create_game_review_session(service_url: str, game_date: date) -> str:
+    payload = json.dumps({"game_date": game_date.isoformat()}).encode("utf-8")
+    req = urlrequest.Request(
+        f"{service_url.rstrip('/')}/sessions",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlrequest.urlopen(req, timeout=10) as response:
+            response_body = response.read().decode("utf-8")
+    except error.HTTPError as exc:
+        response_body = exc.read().decode("utf-8", errors="replace")
+        try:
+            message = json.loads(response_body).get("error", response_body)
+        except json.JSONDecodeError:
+            message = response_body
+        raise RuntimeError(f"Game Review returned {exc.code}: {message}") from exc
+    except (error.URLError, TimeoutError) as exc:
+        raise RuntimeError("Could not reach the Game Review service.") from exc
+
+    try:
+        link = json.loads(response_body)["link"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise RuntimeError("Game Review returned an invalid session response.") from exc
+    if not isinstance(link, str):
+        raise RuntimeError("Game Review returned an invalid session link.")
+    return link
 
 
 def main():
@@ -139,6 +173,28 @@ def main():
                         visual.close(fig)
                     player_names = [player["name"] for player in team_2]
                     st.markdown("<br>".join(player_names), unsafe_allow_html=True)
+
+                service_url = os.getenv("GAME_REVIEW_SERVICE_URL", "").strip()
+                if not service_url:
+                    st.info(
+                        "Set GAME_REVIEW_SERVICE_URL to create and share a Game Review link."
+                    )
+                else:
+                    review_date = st.date_input(
+                        "Game review date", value=date.today(), key="game_review_date"
+                    )
+                    if st.button("Create Game Review Link"):
+                        try:
+                            with st.spinner("Creating review link..."):
+                                st.session_state.game_review_link = create_game_review_session(
+                                    service_url, review_date
+                                )
+                        except RuntimeError as exc:
+                            st.error(str(exc))
+                    if link := st.session_state.get("game_review_link"):
+                        st.success("Game Review link created.")
+                        st.code(link, language=None)
+                        st.link_button("Open Game Review", link)
 
 
 

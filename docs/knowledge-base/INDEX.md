@@ -17,7 +17,7 @@ describes is the first thing to rot.
 ```
 F-0xx player management ....... 007
 F-02x team generation ......... 026
-F-04x games & history ......... 045
+F-04x games & history ......... 046
 F-06x settings & privacy ...... 062
 F-08x platform & runtime ...... 085
 F-1xx algorithm ............... 105
@@ -44,6 +44,7 @@ F-1xx algorithm ............... 105
 | `F-042` | Game history list | ios | not implemented | — |
 | `F-043` | Game detail view | ios | not implemented | — |
 | `F-044` | Game notes | ios | not implemented | — |
+| `F-045` | Game review link | web | implemented | [features/F-045-game-review-link.md](features/F-045-game-review-link.md) |
 | `F-060` | Privacy toggles | ios | not implemented | — |
 | `F-061` | Theme / palette parity | web | implemented | — |
 | `F-080` | Local persistence | web | implemented | — |
