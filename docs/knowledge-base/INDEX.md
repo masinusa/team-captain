@@ -50,7 +50,7 @@ F-1xx algorithm ............... 105
 | `F-080` | Local persistence | web | implemented | — |
 | `F-081` | Offline operation | web | implemented | — |
 | `F-082` | Connectivity monitoring | ios | not implemented | — |
-| `F-083` | Cloud backup and sync | web | not implemented | [features/F-083-cloud-backup-and-sync.md](features/F-083-cloud-backup-and-sync.md) |
+| `F-083` | Cloud backup and sync | web | partial | [features/F-083-cloud-backup-and-sync.md](features/F-083-cloud-backup-and-sync.md) |
 | `F-084` | Record-level merge sync | — | not implemented | — |
 
 ## Algorithm

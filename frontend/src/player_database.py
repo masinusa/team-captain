@@ -2,6 +2,7 @@
 import json
 import os
 import uuid
+import warnings
 from datetime import datetime, timezone
 
 from sqlalchemy import Column, Float, Integer, String, create_engine, text
@@ -33,6 +34,12 @@ class PlayerORM(Base):
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
+
+# Lower-cased names held by more than one live player. Populated by
+# _migrate_schema() when existing data already violates the uniqueness rule
+# (F-001.5), which prevents the unique index from being created. The roster UI
+# surfaces these so they can be merged; see F-006.4.
+DUPLICATE_LIVE_NAMES: list[str] = []
 
 
 def _utc_now() -> str:
@@ -88,6 +95,31 @@ def _player_dict(player: PlayerORM) -> dict:
         "updated_at": player.updated_at,
         "deleted_at": player.deleted_at,
         "merged_from": _json_list(player.merged_from),
+    }
+
+
+def _canonical_record_bytes(record: dict) -> bytes:
+    """Return the F-083 equal-timestamp conflict ordering for one record."""
+    return json.dumps(
+        record, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+
+
+def _public_record(record: dict) -> dict:
+    """Convert an internally normalized shared record to its F-006 shape."""
+    return {
+        "id": record["player_id"],
+        "name": record["name"],
+        "distribution": record["distribution_score"],
+        "offense": record["offense_score"],
+        "defense": record["defense_score"],
+        "modifier": record["modifier"],
+        "notes": record["notes"],
+        "aliases": json.loads(record["aliases"]),
+        "created_at": record["created_at"],
+        "updated_at": record["updated_at"],
+        "deleted_at": record["deleted_at"],
+        "merged_from": json.loads(record["merged_from"]),
     }
 
 
@@ -167,12 +199,37 @@ def _migrate_schema() -> None:
                 ),
                 {**values, "id": row["id"]},
             )
-        connection.execute(
-            text(
-                "CREATE UNIQUE INDEX IF NOT EXISTS players_live_name_unique "
-                "ON players(lower(name)) WHERE deleted_at IS NULL"
+        # Existing databases predate the uniqueness rule and may already hold
+        # duplicate live names. Creating the index anyway raises IntegrityError
+        # inside this transaction, which aborts the migration at import time and
+        # takes the whole app down. F-006.3 forbids resolving duplicates
+        # automatically, so record them and let the user merge deliberately.
+        DUPLICATE_LIVE_NAMES[:] = [
+            row[0]
+            for row in connection.execute(
+                text(
+                    "SELECT lower(name) FROM players WHERE deleted_at IS NULL "
+                    "GROUP BY lower(name) HAVING count(*) > 1 ORDER BY lower(name)"
+                )
             )
-        )
+        ]
+        if DUPLICATE_LIVE_NAMES:
+            warnings.warn(
+                "Duplicate player names found, so live-name uniqueness is not "
+                "enforced yet: "
+                + ", ".join(DUPLICATE_LIVE_NAMES)
+                + ". Merge them (F-006.4); the index is created automatically "
+                "once none remain.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+        else:
+            connection.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS players_live_name_unique "
+                    "ON players(lower(name)) WHERE deleted_at IS NULL"
+                )
+            )
         connection.execute(
             text("CREATE UNIQUE INDEX IF NOT EXISTS players_player_id_unique ON players(player_id)")
         )
@@ -330,7 +387,12 @@ def restore_players(records: list[dict]) -> tuple[int, int]:
         for record in normalized:
             existing = session.query(PlayerORM).filter_by(player_id=record["player_id"]).first()
             if existing:
-                if record["updated_at"] > existing.updated_at:
+                incoming_wins_tie = (
+                    record["updated_at"] == existing.updated_at
+                    and _canonical_record_bytes(_public_record(record))
+                    > _canonical_record_bytes(_player_dict(existing))
+                )
+                if record["updated_at"] > existing.updated_at or incoming_wins_tie:
                     for field, value in record.items():
                         setattr(existing, field, value)
                     updated += 1

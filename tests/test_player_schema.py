@@ -51,8 +51,60 @@ class PlayerSchemaTests(unittest.TestCase):
         connection.commit()
         connection.close()
 
+    def _legacy_database_with_duplicate_names(self):
+        """A pre-F-006 database that already violates live-name uniqueness."""
+        self._legacy_database()
+        connection = sqlite3.connect(Path(self.tempdir.name) / "player_database.db")
+        connection.execute(
+            """
+            INSERT INTO players
+                (name, distribution_score, offense_score, defense_score, modifier, notes)
+            VALUES ('Marcel', 3, 3, 3, 0.0, ''), ('marcel', 3, 3, 3, 0.6, 'good passing')
+            """
+        )
+        connection.commit()
+        connection.close()
+
     def _database(self):
         return importlib.import_module("player_database")
+
+    def test_duplicate_names_do_not_abort_the_migration(self):
+        # Real rosters predate the uniqueness rule. Creating the unique index
+        # regardless raises inside the migration transaction, which runs at
+        # import and would take the whole app down rather than just refusing
+        # the index.
+        self._legacy_database_with_duplicate_names()
+        database = self._database()
+
+        self.assertEqual(database.DUPLICATE_LIVE_NAMES, ["marcel"])
+        self.assertEqual(len(database.list_players()), 3)
+
+        connection = sqlite3.connect(Path(self.tempdir.name) / "player_database.db")
+        indexes = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'index'"
+            )
+        }
+        connection.close()
+        # Deferred, not silently created against violating data.
+        self.assertNotIn("players_live_name_unique", indexes)
+
+    def test_unique_index_is_created_when_no_duplicates_exist(self):
+        self._legacy_database()
+        database = self._database()
+
+        self.assertEqual(database.DUPLICATE_LIVE_NAMES, [])
+
+        connection = sqlite3.connect(Path(self.tempdir.name) / "player_database.db")
+        indexes = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'index'"
+            )
+        }
+        connection.close()
+        self.assertIn("players_live_name_unique", indexes)
 
     def test_legacy_rows_get_stable_shared_fields(self):
         self._legacy_database()
@@ -100,6 +152,15 @@ class PlayerSchemaTests(unittest.TestCase):
         self.assertEqual(database.restore_players([older]), (0, 0))
         self.assertEqual(database.restore_players([newer]), (0, 1))
         self.assertEqual(database.get_player(player["id"])["name"], "Renamed")
+
+    def test_restore_uses_canonical_record_order_for_equal_timestamps(self):
+        database = self._database()
+        player = database.add_player("Player One", 3, 4, 2)
+        canonical_winner = dict(player)
+        canonical_winner["name"] = "Zebra"
+
+        self.assertEqual(database.restore_players([canonical_winner]), (0, 1))
+        self.assertEqual(database.get_player(player["id"])["name"], "Zebra")
 
 
 if __name__ == "__main__":
