@@ -31,8 +31,8 @@ F-1xx algorithm ............... 105
 | `F-002` | Add a player | web | implemented | [features/F-002-add-player.md](features/F-002-add-player.md) |
 | `F-003` | Edit a player | web | implemented | — |
 | `F-004` | Delete a player | web | implemented | — |
-| `F-005` | Search / filter the player list | ios | not implemented | — |
-| `F-006` | Player identity, aliases, and duplicate merge | web | partial | [features/F-006-player-identity-and-aliases.md](features/F-006-player-identity-and-aliases.md) |
+| `F-005` | Search / filter the player list | ios | partial | — |
+| `F-006` | Player identity, aliases, and duplicate merge | web | implemented | [features/F-006-player-identity-and-aliases.md](features/F-006-player-identity-and-aliases.md) |
 | `F-020` | Player selection for a split | web | implemented | [features/F-020-player-selection.md](features/F-020-player-selection.md) |
 | `F-021` | Team generation | web | implemented | [features/F-021-team-generation.md](features/F-021-team-generation.md) |
 | `F-022` | Pitch visualization | web | implemented | — |
@@ -65,7 +65,10 @@ F-1xx algorithm ............... 105
 
 ## Where the web client is behind
 
-Eleven of the twenty-six requirements above originated on iOS and have no web
-implementation: `F-005`, `F-023`, `F-024`, `F-025`, `F-040`–`F-044`, `F-060`,
-`F-082`. That is not a defect list — it is the current shape of the product,
-recorded so it stays visible.
+Ten of the requirements above originated on iOS and have no web
+implementation: `F-023`, `F-024`, `F-025`, `F-040`–`F-044`, `F-060`, `F-082`.
+That is not a defect list — it is the current shape of the product, recorded so
+it stays visible.
+
+`F-005` is partial on both clients in the same way: the team picker filters by
+name and alias, but neither roster screen has its own search.

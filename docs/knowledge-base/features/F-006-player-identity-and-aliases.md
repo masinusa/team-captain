@@ -99,7 +99,7 @@ game is touched.
 
 ## Web client
 
-**Status:** partial
+**Status:** implemented
 **Code:** `frontend/src/player_database.py`, `frontend/src/backup.py`,
 `frontend/src/pages/The_Bench.py`, `frontend/src/Game_Time.py`
 
@@ -110,11 +110,12 @@ write the version-1 shared record.
 
 **Known gaps:**
 
-- Aliases are not yet searchable (F-006.2).
-- There is no explicit duplicate-merge action or redirect resolution
-  (F-006.4–F-006.5); `merged_from` is stored for a later merge workflow.
-- Backup helpers are not exposed in the Streamlit UI, and no cloud sync client
-  is wired (F-083).
+- The uniqueness index is deferred while duplicate live names exist, so
+  uniqueness is unenforced at the database level until they are merged. The
+  Bench surfaces this; the index reappears on its own once the last duplicate
+  is resolved.
+- An alias may duplicate another player's canonical name. Search then shows
+  both, which is confusing but harmless — F-006.3 forbids matching on it.
 
 ## History
 
@@ -123,3 +124,6 @@ write the version-1 shared record.
   which would detach every historical goal on first sync.
 - 2026-09-06 — Began the foundation migration: legacy records receive stable
   identities and lifecycle metadata before sync or merge UX is introduced.
+- 2026-09-06 — Added the merge action, alias editing, and redirect resolution.
+  Aliases became searchable via the picker label, closing F-006.2, F-006.4, and
+  F-006.5.
