@@ -39,11 +39,11 @@ F-1xx algorithm ............... 105
 | `F-023` | Enlarge a pitch diagram | ios | not implemented | — |
 | `F-024` | Copy teams as text | ios | not implemented | — |
 | `F-025` | Copy a pitch image | ios | not implemented | — |
-| `F-040` | Save a game | ios | not implemented | — |
-| `F-041` | Per-player goal tracking | ios | not implemented | — |
-| `F-042` | Game history list | ios | not implemented | — |
-| `F-043` | Game detail view | ios | not implemented | — |
-| `F-044` | Game notes | ios | not implemented | — |
+| `F-040` | Save a game | ios | implemented | [features/F-040-save-a-game.md](features/F-040-save-a-game.md) |
+| `F-041` | Per-player goal tracking | ios | implemented | [features/F-041-per-player-goal-tracking.md](features/F-041-per-player-goal-tracking.md) |
+| `F-042` | Game history list | ios | implemented | [features/F-042-game-history-list.md](features/F-042-game-history-list.md) |
+| `F-043` | Game detail view | ios | implemented | [features/F-043-game-detail-view.md](features/F-043-game-detail-view.md) |
+| `F-044` | Game notes | ios | implemented | [features/F-044-game-notes.md](features/F-044-game-notes.md) |
 | `F-045` | Game review link | web | implemented | [features/F-045-game-review-link.md](features/F-045-game-review-link.md) |
 | `F-060` | Privacy toggles | ios | not implemented | — |
 | `F-061` | Theme / palette parity | web | implemented | — |
@@ -65,8 +65,8 @@ F-1xx algorithm ............... 105
 
 ## Where the web client is behind
 
-Ten of the requirements above originated on iOS and have no web
-implementation: `F-023`, `F-024`, `F-025`, `F-040`–`F-044`, `F-060`, `F-082`.
+Five of the requirements above originated on iOS and have no web
+implementation: `F-023`, `F-024`, `F-025`, `F-060`, `F-082`.
 That is not a defect list — it is the current shape of the product, recorded so
 it stays visible.
 

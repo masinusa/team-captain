@@ -1,14 +1,12 @@
 import base64
-import json
-import os
 from datetime import date
-from urllib import error, request as urlrequest
 
 import streamlit as st
 from pydantic import validate_call
 
 from player_database import list_players, get_player, resolve_player_id
 from algorithm import select_teams, create_visualization, Player, Team
+from game_history import save_game
 
 # Read the gif once at the top
 file_ = open("./bouncing_soccer_ball.gif", "rb")
@@ -52,39 +50,9 @@ def visualize_team(team: list[dict]):
         return None
 
 
-def create_game_review_session(service_url: str, game_date: date) -> str:
-    payload = json.dumps({"game_date": game_date.isoformat()}).encode("utf-8")
-    req = urlrequest.Request(
-        f"{service_url.rstrip('/')}/sessions",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        with urlrequest.urlopen(req, timeout=10) as response:
-            response_body = response.read().decode("utf-8")
-    except error.HTTPError as exc:
-        response_body = exc.read().decode("utf-8", errors="replace")
-        try:
-            message = json.loads(response_body).get("error", response_body)
-        except json.JSONDecodeError:
-            message = response_body
-        raise RuntimeError(f"Game Review returned {exc.code}: {message}") from exc
-    except (error.URLError, TimeoutError) as exc:
-        raise RuntimeError("Could not reach the Game Review service.") from exc
-
-    try:
-        link = json.loads(response_body)["link"]
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        raise RuntimeError("Game Review returned an invalid session response.") from exc
-    if not isinstance(link, str):
-        raise RuntimeError("Game Review returned an invalid session link.")
-    return link
-
-
 def main():
-    st.title("Team Split") 
-    
+    st.title("Team Split")
+
     # Add bouncing soccer ball gif, centered and with rounded edges
     st.sidebar.markdown(
         f'<div style="display: flex; justify-content: center;">'
@@ -94,7 +62,7 @@ def main():
         unsafe_allow_html=True
     )
 
-    
+
     # Get all players from the database
     all_players = list_players()
     # Show aliases in the label so the multiselect's own filtering matches them
@@ -160,55 +128,89 @@ def main():
                 else:
                     st.error("Could not retrieve a selected player.")
                     return
-            
+
             # Split the players into two balanced teams, entirely locally
             teams = get_teams(players)
             if teams:
-                # Display the teams
-                col1, col2 = st.columns(2)
-                st.subheader("Teams")
-                with col1:
-                    st.write("Team 1")
-                    team_1 = teams.get("team1")
-                    visual = visualize_team(team_1)
-                    if visual:
-                        fig = visual.gcf()
-                        st.pyplot(fig)
-                        visual.close(fig)
-                    player_names = [player["name"] for player in team_1]
-                    st.markdown("<br>".join(player_names), unsafe_allow_html=True)
-                with col2:
-                    st.write("Team 2")
-                    team_2 = teams.get("team2")
-                    visual = visualize_team(team_2)
-                    if visual:
-                        fig = visual.gcf()
-                        st.pyplot(fig)
-                        visual.close(fig)
-                    player_names = [player["name"] for player in team_2]
-                    st.markdown("<br>".join(player_names), unsafe_allow_html=True)
+                # Persist the split into session_state (not just a local variable)
+                # so it survives every later rerun -- including the ones caused by
+                # interacting with the Save Game form below. st.button() only
+                # reads True on the exact rerun its own click causes and reverts
+                # to False on every other rerun, so gating the rest of this page
+                # on the button itself would make the whole section (including
+                # any nested button) disappear the instant something inside it
+                # is clicked.
+                st.session_state.game_team1 = teams["team1"]
+                st.session_state.game_team2 = teams["team2"]
+                st.session_state.game_split_signature = tuple(sorted(selected_players))
+                st.session_state.pop("game_saved_id", None)
 
-                service_url = os.getenv("GAME_REVIEW_SERVICE_URL", "").strip()
-                if not service_url:
-                    st.info(
-                        "Set GAME_REVIEW_SERVICE_URL to create and share a Game Review link."
-                    )
-                else:
-                    review_date = st.date_input(
-                        "Game review date", value=date.today(), key="game_review_date"
-                    )
-                    if st.button("Create Game Review Link"):
-                        try:
-                            with st.spinner("Creating review link..."):
-                                st.session_state.game_review_link = create_game_review_session(
-                                    service_url, review_date
-                                )
-                        except RuntimeError as exc:
-                            st.error(str(exc))
-                    if link := st.session_state.get("game_review_link"):
-                        st.success("Game Review link created.")
-                        st.code(link, language=None)
-                        st.link_button("Open Game Review", link)
+        current_signature = tuple(sorted(selected_players))
+        if (
+            st.session_state.get("game_split_signature") == current_signature
+            and st.session_state.get("game_team1")
+        ):
+            team_1 = st.session_state.game_team1
+            team_2 = st.session_state.game_team2
+
+            # Display the teams
+            col1, col2 = st.columns(2)
+            st.subheader("Teams")
+            with col1:
+                st.write("Team 1")
+                visual = visualize_team(team_1)
+                if visual:
+                    fig = visual.gcf()
+                    st.pyplot(fig)
+                    visual.close(fig)
+                player_names = [player["name"] for player in team_1]
+                st.markdown("<br>".join(player_names), unsafe_allow_html=True)
+            with col2:
+                st.write("Team 2")
+                visual = visualize_team(team_2)
+                if visual:
+                    fig = visual.gcf()
+                    st.pyplot(fig)
+                    visual.close(fig)
+                player_names = [player["name"] for player in team_2]
+                st.markdown("<br>".join(player_names), unsafe_allow_html=True)
+
+            st.subheader("Save Game")
+            if st.session_state.get("game_saved_id") is None:
+                with st.form("save_game_form"):
+                    game_date = st.date_input("Game date", value=date.today())
+                    score_col1, score_col2 = st.columns(2)
+                    score1 = score_col1.number_input("Team 1 score", min_value=0, max_value=99, value=0, step=1)
+                    score2 = score_col2.number_input("Team 2 score", min_value=0, max_value=99, value=0, step=1)
+                    st.caption("Goals (optional)")
+                    goal_inputs = {}
+                    for player in team_1 + team_2:
+                        goal_inputs[player["id"]] = st.number_input(
+                            f"{player['name']} goals",
+                            min_value=0,
+                            max_value=20,
+                            value=0,
+                            step=1,
+                            key=f"goal_{player['id']}",
+                        )
+                    submitted = st.form_submit_button("Save Game")
+                if submitted:
+                    try:
+                        game = save_game(
+                            game_date, team_1, team_2, int(score1), int(score2), goal_inputs
+                        )
+                        st.session_state.game_saved_id = game["id"]
+                        st.success("Game saved. Find it in Game History.")
+                        st.rerun()
+                    except ValueError as exc:
+                        st.error(str(exc))
+            else:
+                st.success(
+                    "This game is saved. Open Game History to edit it, add notes, "
+                    "or create a review link."
+                )
+        elif st.session_state.get("game_split_signature") is not None:
+            st.info("Player selection changed — click Split Teams again.")
 
 
 

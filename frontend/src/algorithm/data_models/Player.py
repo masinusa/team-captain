@@ -5,6 +5,7 @@ import pandas as pd
 
 
 class Player(BaseModel):
+    id: str | None = None
     name: str
     offense: int = Field(ge=0, le=5)
     distribution: int = Field(ge=0, le=5)

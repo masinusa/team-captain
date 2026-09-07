@@ -30,5 +30,7 @@ cd frontend/src && streamlit run Game_Time.py
 ## Game Review links
 
 Set `GAME_REVIEW_SERVICE_URL` to the deployed Game Review service URL before
-starting the app. After splitting teams, use **Create Game Review Link** to
-create and open a public post-game submission link.
+starting the app. After playing a game, save it (Team Split page), then open
+it from **Game History** and use **Create Game Review Link** to create and
+open a public post-game submission link, carrying the real score, rosters,
+and per-player ranking snapshot.
