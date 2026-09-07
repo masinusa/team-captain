@@ -55,13 +55,15 @@ played — the final score and both rosters are already known, so they're sent
 as the snapshot, matching iOS. There is no longer a way to create a link
 before a game is played; that pre-game path (which only ever sent a bare
 `game_date`, no snapshot) was removed once Game History gave web a real score
-to attach. Each roster entry also sends the player's `overall_score`
-(offense/distribution/defense/modifier composite, F-100) as an optional
-per-player `ranking` snapshot, recomputed from the frozen roster snapshot at
-link-creation time — the same skill value the app used when the teams were
-built, not a live link to the player's current rating. This lets the
-game-review service use it, alongside balance ratings, to train a
-team-balancing model later, matching iOS's `ranking` field exactly.
+to attach. Each roster entry also sends the player's four raw component
+scores — `offense`/`distribution`/`defense`/`modifier` (F-100) — read from
+the frozen roster snapshot at link-creation time, not a single collapsed
+`overall_score`/ranking: the game-review service stores these independently
+so nothing has to un-average them later. These are the same skill values the
+app used when the teams were built, not a live link to the player's current
+rating. This lets the game-review service use them, alongside balance
+ratings, to train a team-balancing model later, matching iOS's four fields
+exactly.
 
 **Known gaps:** The service URL is still supplied through
 `GAME_REVIEW_SERVICE_URL`. The public endpoint can be called by any internet
@@ -77,12 +79,14 @@ Creates a session from a saved game in Game History, after the game has been
 played — the final score and both rosters are already known, so they're sent
 as the snapshot. Real player names are always sent, regardless of the
 `hideNamesFromHistory` setting (that setting only affects the organizer's own
-local history view). Each roster entry also sends the player's
-`overallScore` (offense/distribution/defense/modifier composite, F-001.3) as
-an optional per-player `ranking` snapshot — the same skill value the app used
-when the teams were built, frozen at link-creation time like the score, not a
-live link to the player's current rating. This lets the game-review service
-use it, alongside balance ratings, to train a team-balancing model later.
+local history view). Each roster entry also sends the player's four raw
+component scores — `offense`/`distribution`/`defense`/`modifier` (F-001.3) —
+not a single collapsed `overallScore`/ranking: the game-review service
+stores these independently so nothing has to un-average them later. Each
+score is independently optional and frozen at link-creation time like the
+score, not a live link to the player's current rating. This lets the
+game-review service use them, alongside balance ratings, to train a
+team-balancing model later.
 
 ## History
 
@@ -104,3 +108,12 @@ use it, alongside balance ratings, to train a team-balancing model later.
   the pre-game, snapshot-less link-creation path was removed, and review
   links are now only created from a saved game, always with a real
   score/roster/`ranking` snapshot — matching iOS.
+- 2026-09-06 — Corrected both clients' roster-entry payload: the game-review
+  service changed to store each player's four component scores
+  (`offense`/`distribution`/`defense`/`modifier`) independently rather than
+  one collapsed `ranking` number, and both clients had been sending the old
+  `ranking`-only shape — silently dropped by the service, since it only
+  recognizes those four field names. iOS's `RosterPlayer` and web's
+  `_roster_payload()` now send the four raw scores (already available on
+  both clients' own player models/snapshots) instead of a computed
+  `overallScore`/`overall_score`.

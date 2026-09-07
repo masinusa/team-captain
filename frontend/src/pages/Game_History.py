@@ -4,9 +4,7 @@ from datetime import date
 
 import streamlit as st
 
-from algorithm import Player
 from game_history import (
-    SNAPSHOT_FIELDS,
     add_note,
     delete_game,
     delete_note,
@@ -22,13 +20,17 @@ DELETE_PENDING_KEY = "game_history_delete_pending"
 
 
 def _roster_payload(players: list[dict]) -> list[dict]:
-    """Recompute each player's ranking (F-045) from the frozen snapshot."""
+    """Send each player's four raw component scores from the frozen
+    snapshot (F-045) -- offense, distribution, defense, modifier -- not a
+    single collapsed ranking; the game-review service stores them
+    independently so nothing server-side has to un-average them later."""
     return [
         {
             "name": player["name"],
-            "ranking": Player(
-                **{field: player[field] for field in SNAPSHOT_FIELDS if field != "id"}
-            ).overall_score,
+            "offense": player["offense"],
+            "distribution": player["distribution"],
+            "defense": player["defense"],
+            "modifier": player["injury_handicap"],
         }
         for player in players
     ]

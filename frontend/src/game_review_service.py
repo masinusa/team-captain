@@ -17,7 +17,9 @@ def create_game_review_session(
     score_team1/score_team2/team1_players/team2_players are an all-or-nothing
     bundle -- the service stores them as a single frozen snapshot, so partial
     data isn't accepted. team1_players/team2_players entries are shaped
-    {"name": str, "ranking": float | None}.
+    {"name": str, "offense": int | None, "distribution": int | None,
+    "defense": int | None, "modifier": float | None} -- the four raw
+    component scores, not a single collapsed ranking.
     """
     bundle = (score_team1, score_team2, team1_players, team2_players)
     payload: dict = {"game_date": game_date.isoformat()}

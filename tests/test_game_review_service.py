@@ -43,8 +43,12 @@ class GameReviewServiceTests(unittest.TestCase):
                 date(2026, 1, 1),
                 score_team1=3,
                 score_team2=1,
-                team1_players=[{"name": "Alice", "ranking": 3.5}],
-                team2_players=[{"name": "Bob", "ranking": 2.0}],
+                team1_players=[
+                    {"name": "Alice", "offense": 4, "distribution": 5, "defense": 3, "modifier": 0.1}
+                ],
+                team2_players=[
+                    {"name": "Bob", "offense": 3, "distribution": 3, "defense": 3, "modifier": 0}
+                ],
             )
         payload = json.loads(self.last_request.data)
         self.assertEqual(
@@ -53,8 +57,12 @@ class GameReviewServiceTests(unittest.TestCase):
                 "game_date": "2026-01-01",
                 "score_team1": 3,
                 "score_team2": 1,
-                "team1_players": [{"name": "Alice", "ranking": 3.5}],
-                "team2_players": [{"name": "Bob", "ranking": 2.0}],
+                "team1_players": [
+                    {"name": "Alice", "offense": 4, "distribution": 5, "defense": 3, "modifier": 0.1}
+                ],
+                "team2_players": [
+                    {"name": "Bob", "offense": 3, "distribution": 3, "defense": 3, "modifier": 0}
+                ],
             },
         )
 
